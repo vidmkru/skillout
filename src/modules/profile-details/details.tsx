@@ -8,6 +8,7 @@ import { Wrapper, Heading, Button } from '@/ui'
 import { axiosInstance } from '@/shared/api'
 import { subscriptionAtom } from '@/shared/atoms/subscriptionAtom'
 import type { CreatorProfile } from '@/shared/types/database'
+import Image from 'next/image'
 
 import styles from './details.module.scss'
 
@@ -79,7 +80,13 @@ const ProfileDetails: FC<ProfileDetailsProps> = ({ className }) => {
 				<div className={styles.header}>
 					<div className={styles.avatar}>
 						{profile.avatar ? (
-							<img src={profile.avatar} alt={profile.name} />
+							<Image 
+								src={profile.avatar} 
+								alt={profile.name}
+								width={120}
+								height={120}
+								className={styles.avatarImage}
+							/>
 						) : (
 							<div className={styles.avatarPlaceholder}>
 								{profile.name.charAt(0).toUpperCase()}

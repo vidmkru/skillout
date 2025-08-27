@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Wrapper, Heading, Button } from '@/ui'
 import { axiosInstance } from '@/shared/api'
 import type { CreatorProfile, PaginatedResponse } from '@/shared/types/database'
+import Image from 'next/image'
 
 import styles from './profiles.module.scss'
 
@@ -88,7 +89,13 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 								<article key={profile.id} className={styles.card} onClick={() => handleProfileClick(profile.id)}>
 									<div className={styles.avatar}>
 										{profile.avatar ? (
-											<img src={profile.avatar} alt={profile.name} />
+											<Image 
+												src={profile.avatar} 
+												alt={profile.name}
+												width={80}
+												height={80}
+												className={styles.avatarImage}
+											/>
 										) : (
 											<div className={styles.avatarPlaceholder}>
 												{profile.name.charAt(0).toUpperCase()}
