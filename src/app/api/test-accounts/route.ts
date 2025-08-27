@@ -7,7 +7,7 @@ import type { User, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: NextRequest) {
+export async function POST() {
 	try {
 		const now = new Date().toISOString()
 		const testAccounts: User[] = []

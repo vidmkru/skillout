@@ -1,4 +1,4 @@
-import { ExperienceLevel, UserRole, SubscriptionTier, InviteType } from './enums'
+import { ExperienceLevel, UserRole, SubscriptionTier } from './enums'
 
 // Base user interface
 export interface User {

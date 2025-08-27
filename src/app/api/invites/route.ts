@@ -3,7 +3,7 @@ import { db } from '@/shared/db/redis'
 import { generateToken } from '@/shared/auth/utils'
 import { getUserBySession } from '@/shared/auth/utils'
 import { getFallbackSession, getFallbackUser, setFallbackInvite, getFallbackInvitesByUser } from '@/shared/db/fallback'
-import type { ApiResponse, Invite, CreateInviteRequest, InviteStats } from '@/shared/types/database'
+import type { ApiResponse, Invite, CreateInviteRequest } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
