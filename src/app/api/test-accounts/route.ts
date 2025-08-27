@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { generateToken } from '@/shared/auth/utils'
 import { UserRole, SubscriptionTier } from '@/shared/types/enums'
