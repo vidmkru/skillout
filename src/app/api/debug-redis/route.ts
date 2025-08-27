@@ -18,13 +18,13 @@ export async function GET() {
 		// Test basic operations
 		console.log('📝 Testing SET operation...')
 		const testKey = 'test:debug'
-		const testValue = {
-			message: 'Redis is working!',
+		const testValue = { 
+			message: 'Redis is working!', 
 			timestamp: new Date().toISOString(),
 			env: process.env.NODE_ENV
 		}
 
-		await redis.set(testKey, JSON.stringify(testValue), 'EX', 60)
+		await redis.set(testKey, testValue, { ex: 60 })
 		console.log('✅ SET operation successful')
 
 		console.log('📖 Testing GET operation...')

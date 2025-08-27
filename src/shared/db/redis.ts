@@ -1,65 +1,10 @@
-import Redis from 'ioredis'
+import { Redis } from '@upstash/redis'
 import type { User, Session, CreatorProfile, Invite, Rating, Subscription, AdminSettings } from '../types/database'
 
-// Redis connection configuration
-const redisConfig = process.env.REDIS_URL
-	? {
-		url: process.env.REDIS_URL,
-		retryDelayOnFailover: 100,
-		maxRetriesPerRequest: 1,
-		lazyConnect: true,
-		connectTimeout: 10000,
-		commandTimeout: 5000,
-		tls: {
-			rejectUnauthorized: false
-		},
-		reconnectOnError: (err: Error) => {
-			console.log('🔄 Redis reconnect on error:', err.message)
-			return true
-		}
-	}
-	: {
-		host: process.env.REDIS_HOST || 'localhost',
-		port: parseInt(process.env.REDIS_PORT || '6379'),
-		password: process.env.REDIS_PASSWORD,
-		db: parseInt(process.env.REDIS_DB || '0'),
-		retryDelayOnFailover: 100,
-		maxRetriesPerRequest: 1,
-		lazyConnect: true,
-		connectTimeout: 10000,
-		commandTimeout: 5000,
-	}
+// Initialize Upstash Redis
+const redis = Redis.fromEnv()
 
-console.log('🔧 Redis config:', {
-	hasRedisUrl: !!process.env.REDIS_URL,
-	redisUrl: process.env.REDIS_URL ? `${process.env.REDIS_URL.substring(0, 20)}...` : 'NOT SET',
-	env: process.env.NODE_ENV,
-	config: process.env.REDIS_URL ? 'Using REDIS_URL' : 'Using separate config'
-})
-
-// Create Redis client instance
-export const redis = new Redis(redisConfig)
-
-// Handle Redis connection events
-redis.on('connect', () => {
-	console.log('✅ Redis connected successfully')
-})
-
-redis.on('error', (error) => {
-	console.error('❌ Redis connection error:', error.message)
-})
-
-redis.on('ready', () => {
-	console.log('🚀 Redis is ready to accept commands')
-})
-
-redis.on('close', () => {
-	console.log('🔌 Redis connection closed')
-})
-
-redis.on('reconnecting', () => {
-	console.log('🔄 Redis reconnecting...')
-})
+console.log('🔧 Upstash Redis initialized')
 
 // Redis key prefixes for different data types
 export const KEY_PREFIXES = {
@@ -79,7 +24,7 @@ export const db = {
 	async getUser(id: string): Promise<User | null> {
 		try {
 			const data = await redis.get(`${KEY_PREFIXES.USER}${id}`)
-			return data ? JSON.parse(data) : null
+			return data ? data as User : null
 		} catch (error) {
 			console.error('Redis getUser error:', error)
 			return null
@@ -90,7 +35,7 @@ export const db = {
 		try {
 			const userId = await redis.get(`${KEY_PREFIXES.USER_EMAIL}${email.toLowerCase()}`)
 			if (!userId) return null
-			return await this.getUser(userId)
+			return await this.getUser(userId as string)
 		} catch (error) {
 			console.error('Redis getUserByEmail error:', error)
 			return null
@@ -99,9 +44,10 @@ export const db = {
 
 	async setUser(id: string, userData: User): Promise<void> {
 		try {
-			await redis.set(`${KEY_PREFIXES.USER}${id}`, JSON.stringify(userData), 'EX', 86400 * 30)
+			await redis.set(`${KEY_PREFIXES.USER}${id}`, userData, { ex: 86400 * 30 }) // 30 days
+			// Also store email lookup
 			if (userData.email) {
-				await redis.set(`${KEY_PREFIXES.USER_EMAIL}${userData.email.toLowerCase()}`, id, 'EX', 86400 * 30)
+				await redis.set(`${KEY_PREFIXES.USER_EMAIL}${userData.email.toLowerCase()}`, id, { ex: 86400 * 30 })
 			}
 		} catch (error) {
 			console.error('Redis setUser error:', error)
@@ -125,7 +71,7 @@ export const db = {
 	async getSession(sessionId: string): Promise<Session | null> {
 		try {
 			const data = await redis.get(`${KEY_PREFIXES.SESSION}${sessionId}`)
-			return data ? JSON.parse(data) : null
+			return data ? data as Session : null
 		} catch (error) {
 			console.error('Redis getSession error:', error)
 			return null
@@ -134,7 +80,7 @@ export const db = {
 
 	async setSession(sessionId: string, sessionData: Session): Promise<void> {
 		try {
-			await redis.set(`${KEY_PREFIXES.SESSION}${sessionId}`, JSON.stringify(sessionData), 'EX', 86400 * 7)
+			await redis.set(`${KEY_PREFIXES.SESSION}${sessionId}`, sessionData, { ex: 86400 * 7 }) // 7 days
 		} catch (error) {
 			console.error('Redis setSession error:', error)
 			throw error
@@ -153,7 +99,7 @@ export const db = {
 	async getProfile(id: string): Promise<CreatorProfile | null> {
 		try {
 			const data = await redis.get(`${KEY_PREFIXES.PROFILE}${id}`)
-			return data ? JSON.parse(data) : null
+			return data ? data as CreatorProfile : null
 		} catch (error) {
 			console.error('Redis getProfile error:', error)
 			return null
@@ -162,7 +108,7 @@ export const db = {
 
 	async setProfile(id: string, profileData: CreatorProfile): Promise<void> {
 		try {
-			await redis.set(`${KEY_PREFIXES.PROFILE}${id}`, JSON.stringify(profileData), 'EX', 86400 * 30)
+			await redis.set(`${KEY_PREFIXES.PROFILE}${id}`, profileData, { ex: 86400 * 30 })
 		} catch (error) {
 			console.error('Redis setProfile error:', error)
 			throw error
@@ -175,7 +121,7 @@ export const db = {
 			if (keys.length === 0) return []
 
 			const profiles = await redis.mget(...keys)
-			return profiles.map(p => p ? JSON.parse(p) : null).filter(Boolean)
+			return profiles.filter((p): p is CreatorProfile => p !== null)
 		} catch (error) {
 			console.error('Redis getAllProfiles error:', error)
 			return []
@@ -186,7 +132,7 @@ export const db = {
 	async getInvite(code: string): Promise<Invite | null> {
 		try {
 			const data = await redis.get(`${KEY_PREFIXES.INVITE}${code}`)
-			return data ? JSON.parse(data) : null
+			return data ? data as Invite : null
 		} catch (error) {
 			console.error('Redis getInvite error:', error)
 			return null
@@ -195,7 +141,7 @@ export const db = {
 
 	async setInvite(code: string, inviteData: Invite): Promise<void> {
 		try {
-			await redis.set(`${KEY_PREFIXES.INVITE}${code}`, JSON.stringify(inviteData), 'EX', 86400 * 30)
+			await redis.set(`${KEY_PREFIXES.INVITE}${code}`, inviteData, { ex: 86400 * 30 })
 		} catch (error) {
 			console.error('Redis setInvite error:', error)
 			throw error
@@ -216,7 +162,7 @@ export const db = {
 			if (keys.length === 0) return []
 
 			const invites = await redis.mget(...keys)
-			return invites.map(i => i ? JSON.parse(i) : null).filter(Boolean)
+			return invites.filter((i): i is Invite => i !== null)
 		} catch (error) {
 			console.error('Redis getAllInvites error:', error)
 			return []
@@ -227,7 +173,7 @@ export const db = {
 	async getRating(profileId: string): Promise<Rating | null> {
 		try {
 			const data = await redis.get(`${KEY_PREFIXES.RATING}${profileId}`)
-			return data ? JSON.parse(data) : null
+			return data ? data as Rating : null
 		} catch (error) {
 			console.error('Redis getRating error:', error)
 			return null
@@ -236,7 +182,7 @@ export const db = {
 
 	async setRating(profileId: string, ratingData: Rating): Promise<void> {
 		try {
-			await redis.set(`${KEY_PREFIXES.RATING}${profileId}`, JSON.stringify(ratingData), 'EX', 86400 * 30)
+			await redis.set(`${KEY_PREFIXES.RATING}${profileId}`, ratingData, { ex: 86400 * 30 })
 		} catch (error) {
 			console.error('Redis setRating error:', error)
 			throw error
@@ -247,7 +193,7 @@ export const db = {
 	async getSubscription(userId: string): Promise<Subscription | null> {
 		try {
 			const data = await redis.get(`${KEY_PREFIXES.SUBSCRIPTION}${userId}`)
-			return data ? JSON.parse(data) : null
+			return data ? data as Subscription : null
 		} catch (error) {
 			console.error('Redis getSubscription error:', error)
 			return null
@@ -256,7 +202,7 @@ export const db = {
 
 	async setSubscription(userId: string, subscriptionData: Subscription): Promise<void> {
 		try {
-			await redis.set(`${KEY_PREFIXES.SUBSCRIPTION}${userId}`, JSON.stringify(subscriptionData), 'EX', 86400 * 30)
+			await redis.set(`${KEY_PREFIXES.SUBSCRIPTION}${userId}`, subscriptionData, { ex: 86400 * 30 })
 		} catch (error) {
 			console.error('Redis setSubscription error:', error)
 			throw error
@@ -267,7 +213,7 @@ export const db = {
 	async getAdminSettings(): Promise<AdminSettings | null> {
 		try {
 			const data = await redis.get(`${KEY_PREFIXES.ADMIN_SETTINGS}main`)
-			return data ? JSON.parse(data) : null
+			return data ? data as AdminSettings : null
 		} catch (error) {
 			console.error('Redis getAdminSettings error:', error)
 			return null
@@ -276,7 +222,7 @@ export const db = {
 
 	async setAdminSettings(id: string, settingsData: AdminSettings): Promise<void> {
 		try {
-			await redis.set(`${KEY_PREFIXES.ADMIN_SETTINGS}${id}`, JSON.stringify(settingsData), 'EX', 86400 * 30)
+			await redis.set(`${KEY_PREFIXES.ADMIN_SETTINGS}${id}`, settingsData, { ex: 86400 * 30 })
 		} catch (error) {
 			console.error('Redis setAdminSettings error:', error)
 			throw error
@@ -290,7 +236,7 @@ export const db = {
 			if (keys.length === 0) return []
 
 			const users = await redis.mget(...keys)
-			return users.map(u => u ? JSON.parse(u) : null).filter(Boolean)
+			return users.filter((u): u is User => u !== null)
 		} catch (error) {
 			console.error('Redis getAllUsers error:', error)
 			return []
@@ -309,13 +255,5 @@ export async function checkRedisConnection(): Promise<boolean> {
 	}
 }
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-	await redis.quit()
-	process.exit(0)
-})
-
-process.on('SIGTERM', async () => {
-	await redis.quit()
-	process.exit(0)
-})
+// Export redis instance for direct access if needed
+export { redis }

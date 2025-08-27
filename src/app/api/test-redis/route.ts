@@ -17,7 +17,7 @@ export async function GET() {
 		const testKey = 'test:connection'
 		const testValue = { message: 'Hello from Redis!', timestamp: Date.now() }
 
-		await redis.set(testKey, JSON.stringify(testValue), 'EX', 60) // 1 minute TTL
+		await redis.set(testKey, testValue, { ex: 60 }) // 1 minute TTL
 		const retrieved = await redis.get(testKey)
 
 		return NextResponse.json({
