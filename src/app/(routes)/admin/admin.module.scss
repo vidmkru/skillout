@@ -170,11 +170,15 @@
 
 .error {
 	text-align: center;
-	color: #f44336;
-	font-size: rem(16);
 	padding: rem(40);
 	background: rgba(244, 67, 54, 0.1);
 	border: 1px solid rgba(244, 67, 54, 0.3);
 	border-radius: rem(12);
 	margin: rem(40) 0;
+}
+
+.errorMessage {
+	color: #f44336;
+	font-size: rem(18);
+	margin-bottom: rem(20);
 }

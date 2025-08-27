@@ -55,14 +55,14 @@ const AdminUsers: FC<AdminUsersProps> = ({ className }) => {
 	const [error, setError] = useState<string | null>(null)
 	const [stats, setStats] = useState<any>(null)
 	const [pagination, setPagination] = useState<any>(null)
-	
+
 	// Filters
 	const [search, setSearch] = useState('')
 	const [roleFilter, setRoleFilter] = useState('all')
 	const [currentPage, setCurrentPage] = useState(1)
 	const [sortBy, setSortBy] = useState('createdAt')
 	const [sortOrder, setSortOrder] = useState('desc')
-	
+
 	// Create user modal
 	const [showCreateModal, setShowCreateModal] = useState(false)
 	const [newUser, setNewUser] = useState({
@@ -76,19 +76,19 @@ const AdminUsers: FC<AdminUsersProps> = ({ className }) => {
 		try {
 			setLoading(true)
 			setError(null)
-			
+
 			const params = new URLSearchParams({
 				page: currentPage.toString(),
 				limit: '20',
 				sortBy,
 				sortOrder
 			})
-			
+
 			if (search) params.append('search', search)
 			if (roleFilter !== 'all') params.append('role', roleFilter)
-			
+
 			const response = await axiosInstance.get<{ success: boolean; data: UsersResponse }>(`/api/admin/users?${params}`)
-			
+
 			if (response.data.success) {
 				setUsers(response.data.data.users)
 				setPagination(response.data.data.pagination)
@@ -107,9 +107,9 @@ const AdminUsers: FC<AdminUsersProps> = ({ className }) => {
 	const createUser = async () => {
 		try {
 			setCreating(true)
-			
+
 			const response = await axiosInstance.post<{ success: boolean; data: User }>('/api/admin/users', newUser)
-			
+
 			if (response.data.success) {
 				setShowCreateModal(false)
 				setNewUser({ email: '', role: 'creator', isVerified: true })
@@ -237,7 +237,7 @@ const AdminUsers: FC<AdminUsersProps> = ({ className }) => {
 							className={styles.searchInput}
 						/>
 					</div>
-					
+
 					<div className={styles.filterGroup}>
 						<select
 							value={roleFilter}
@@ -250,7 +250,7 @@ const AdminUsers: FC<AdminUsersProps> = ({ className }) => {
 							<option value="creator-pro">Creator Pro</option>
 							<option value="producer">Producers</option>
 						</select>
-						
+
 						<select
 							value={`${sortBy}-${sortOrder}`}
 							onChange={(e) => {
@@ -330,11 +330,11 @@ const AdminUsers: FC<AdminUsersProps> = ({ className }) => {
 						>
 							← Назад
 						</Button>
-						
+
 						<div className={styles.pageInfo}>
 							Страница {currentPage} из {pagination.totalPages}
 						</div>
-						
+
 						<Button
 							onClick={() => setCurrentPage(currentPage + 1)}
 							disabled={currentPage === pagination.totalPages}
@@ -358,7 +358,7 @@ const AdminUsers: FC<AdminUsersProps> = ({ className }) => {
 									×
 								</button>
 							</div>
-							
+
 							<div className={styles.modalBody}>
 								<div className={styles.formGroup}>
 									<label>Email</label>
@@ -369,7 +369,7 @@ const AdminUsers: FC<AdminUsersProps> = ({ className }) => {
 										placeholder="user@example.com"
 									/>
 								</div>
-								
+
 								<div className={styles.formGroup}>
 									<label>Роль</label>
 									<select
@@ -383,7 +383,7 @@ const AdminUsers: FC<AdminUsersProps> = ({ className }) => {
 										<option value="admin">Admin</option>
 									</select>
 								</div>
-								
+
 								<div className={styles.formGroup}>
 									<label>
 										<input
@@ -395,7 +395,7 @@ const AdminUsers: FC<AdminUsersProps> = ({ className }) => {
 									</label>
 								</div>
 							</div>
-							
+
 							<div className={styles.modalFooter}>
 								<Button onClick={() => setShowCreateModal(false)} variant="secondary">
 									Отмена

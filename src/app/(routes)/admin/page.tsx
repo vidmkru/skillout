@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/ui/button'
 import { Heading } from '@/ui/heading'
+import { axiosInstance } from '@/shared/api/instances'
 import styles from './admin.module.scss'
 
 interface AdminStats {
@@ -31,15 +32,19 @@ export default function AdminPage() {
 
 	const fetchAdminStats = async () => {
 		try {
-			const response = await fetch('/api/admin/stats')
-			if (response.ok) {
-				const data = await response.json()
-				setStats(data)
+			setIsLoading(true)
+			setError('')
+			
+			const response = await axiosInstance.get<{ success: boolean; data: AdminStats }>('/api/admin/stats')
+			
+			if (response.data.success) {
+				setStats(response.data.data)
 			} else {
 				setError('Не удалось загрузить статистику')
 			}
-		} catch (error) {
-			setError('Ошибка сети')
+		} catch (error: any) {
+			console.error('Fetch admin stats error:', error)
+			setError(error.response?.data?.error || 'Ошибка сети')
 		} finally {
 			setIsLoading(false)
 		}
@@ -54,7 +59,14 @@ export default function AdminPage() {
 	}
 
 	if (error) {
-		return <div className={styles.error}>{error}</div>
+		return (
+			<div className={styles.container}>
+				<div className={styles.error}>
+					<div className={styles.errorMessage}>{error}</div>
+					<Button onClick={fetchAdminStats}>Попробовать снова</Button>
+				</div>
+			</div>
+		)
 	}
 
 	return (
