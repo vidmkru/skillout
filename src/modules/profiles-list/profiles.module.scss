@@ -1,0 +1,12 @@
+@use '@styles/func';
+@use '@styles/mixins';
+
+.root { padding: func.rem(40) 0; }
+.toolbar { display: flex; gap: func.rem(12); margin-bottom: func.rem(24); }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: func.rem(16); }
+.card { grid-column: span 3; background: var(--color-surface); border: 1px solid var(--color-accent-outline); padding: func.rem(16); transition: transform 0.2s ease, border-color 0.2s ease; }
+.card:hover { transform: translateY(-3px); border-color: var(--color-accent-neon); }
+.name { font-weight: 700; }
+
+@include mixins.tablet { .card { grid-column: span 6; } }
+@include mixins.tablet-small { .card { grid-column: span 12; } }

@@ -1,0 +1,50 @@
+@use '@styles/func';
+@use '@styles/mixins';
+
+.root {
+  position: relative;
+  width: 100%;
+  background-color: var(--color-bg);
+
+  &::after {
+    z-index: 1;
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: max(#{func.rem(2)}, 2px);
+    background-color: var(--color-accent-outline);
+  }
+
+  strong {
+    font-weight: 500;
+  }
+}
+
+.wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: func.rem(32);
+  padding-bottom: func.rem(32);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: func.rem(20);
+}
+
+.link {
+  opacity: 0.9;
+  transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+  &:hover { color: var(--color-accent-neon); opacity: 1; transform: translateY(-1px); }
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(6px);
+  background-color: color-mix(in oklab, var(--color-bg), transparent 15%);
+}

@@ -1,0 +1,12 @@
+@use '@styles/func';
+
+.root { padding: func.rem(40) 0; display: grid; gap: func.rem(20); }
+.header { display: flex; align-items: center; gap: func.rem(16); }
+.avatar { width: func.rem(80); height: func.rem(80); border-radius: 50%; background: var(--color-accent-outline); }
+.section { background: var(--color-surface); border: 1px solid var(--color-accent-outline); padding: func.rem(16); }
+.contacts { opacity: 0.8; }
+
+.badges { display: flex; gap: func.rem(8); flex-wrap: wrap; }
+.badge { padding: func.rem(4) func.rem(8); border-radius: func.rem(999); border: 1px solid var(--color-accent-outline); background: rgba(255 122 0 / 0.08); color: var(--color-text); font-size: func.rem(12); }
+.badge--vip { background: rgba(255 122 0 / 0.18); border-color: var(--color-accent-neon); }
+.rating { font-weight: 700; }

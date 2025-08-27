@@ -1,0 +1,95 @@
+@import 'mixins';
+
+:root {
+  /* stylelint-disable */
+  // colors
+  --color-white-default: #fff;
+  --color-black-default: #000;
+  --color-transparent: rgba(255 255 255 / 0%);
+
+  // project colors (Skillout theme)
+  --color-bg: #0b0f10;
+  --color-surface: #1a1f21;
+  --color-text: #e6e7ea;
+  --color-muted: #9aa0a6;
+
+  --color-accent-neon: #ff7a00; // orange (primary accent)
+  --color-accent-warn: #17ff7f; // neon green (secondary)
+  --color-accent-outline: #3a4144; // subtle borders
+/* stylelint-enable */
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizelegibility;
+}
+
+html,
+body {
+  max-width: 100vw;
+  scroll-behavior: smooth;
+}
+
+body {
+  @include text;
+  color: var(--color-text);
+  background: radial-gradient(1200px 800px at 70% -10%, rgba(23 255 127 / 7%) 0%, rgba(23 255 127 / 0%) 60%), var(--color-bg);
+  overflow-x: hidden;
+}
+
+a {
+  color: currentcolor;
+  text-decoration: none;
+  transition: opacity $transition;
+
+  @include desktop-only {
+    &:hover,
+    &:focus-visible {
+      opacity: 0.7;
+    }
+  }
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote {
+  margin: 0;
+}
+
+button {
+  @include reset-btn;
+}
+
+.visually-hidden {
+  @include visually-hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+
+  main {
+    flex-grow: 1;
+  }
+}

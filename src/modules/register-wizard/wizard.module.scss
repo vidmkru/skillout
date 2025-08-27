@@ -1,0 +1,8 @@
+@use '@styles/func';
+@use '@styles/mixins';
+
+.root { padding: func.rem(40) 0; }
+.grid { display: grid; gap: func.rem(16); }
+.actions { display: flex; gap: func.rem(12); margin-top: func.rem(16); }
+.field { display: grid; gap: func.rem(8); }
+.label { opacity: 0.8; }

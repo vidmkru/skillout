@@ -1,0 +1,9 @@
+@use '@styles/func';
+
+.root { padding: func.rem(40) 0; }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: func.rem(16); }
+.card { grid-column: span 4; border: 1px solid var(--color-accent-outline); background: var(--color-surface); padding: func.rem(16); transition: transform 0.2s ease, border-color 0.2s ease; }
+.card:hover { transform: translateY(-3px); border-color: var(--color-accent-neon); }
+.title { font-weight: 700; margin-bottom: func.rem(8); }
+.price { font-size: func.rem(24); margin-bottom: func.rem(12); }
+.features { opacity: 0.9; }

@@ -1,0 +1,51 @@
+@use '@styles/func';
+@use '@styles/mixins';
+@use '@styles/variables';
+
+.root { padding: func.rem(80) 0 func.rem(40); }
+
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent-outline);
+  padding: func.rem(32);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  &:hover { transform: translateY(-3px); box-shadow: 0 func.rem(8) func.rem(24) rgba(0 0 0 / 25%); }
+  display: grid;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: func.rem(20);
+}
+
+.a { grid-column: span 4; align-content: end; }
+.b { grid-column: span 4; align-content: end; }
+.c { grid-column: span 4; align-content: end; }
+
+@include mixins.tablet {
+  .a, .b, .c { grid-column: span 12; }
+}
+
+.num {
+  font-size: clamp(func.rem(48), 8vw, func.rem(100));
+  font-weight: 800;
+  line-height: 0.95;
+}
+
+.caption {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  opacity: 0.7;
+  margin-top: func.rem(8);
+  transition: color 0.2s ease;
+}
+
+.panel:hover .caption { color: var(--color-accent-neon); }
+
+.offline {
+  font-size: clamp(func.rem(48), 8vw, func.rem(100));
+  line-height: 0.95;
+  text-align: right;
+  letter-spacing: 0.01em;
+}

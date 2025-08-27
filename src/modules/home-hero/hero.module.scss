@@ -1,0 +1,68 @@
+@use '@styles/func';
+@use '@styles/mixins';
+@use '@styles/variables';
+
+.root {
+  position: relative;
+  min-height: func.rem(560);
+  padding: func.rem(120) 0 func.rem(80);
+  display: flex;
+  align-items: center;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: func.rem(32);
+
+  @include mixins.tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.title {
+  font-size: func.rem(48);
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  margin: 0 0 func.rem(24);
+}
+
+.subtitle {
+  opacity: 0.8;
+  margin-bottom: func.rem(32);
+}
+
+.cta {
+  display: inline-flex;
+  transform: translateZ(0);
+  transition: transform 0.2s ease;
+  &:hover { transform: translateY(-2px); }
+}
+
+.timer {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: func.rem(24);
+  align-items: end;
+}
+
+.timerItem {
+  text-align: center;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  &:hover { transform: translateY(-2px); opacity: 0.9; }
+
+  .label { transition: color 0.2s ease; }
+  &:hover .label { color: var(--color-accent-neon); }
+}
+
+.time {
+  font-size: clamp(func.rem(40), 7vw, func.rem(64));
+  font-weight: 800;
+  line-height: 1;
+}
+
+.label {
+  opacity: 0.8;
+  margin-top: func.rem(12);
+  font-size: func.rem(12);
+}

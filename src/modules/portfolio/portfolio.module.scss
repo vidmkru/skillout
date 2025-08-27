@@ -1,0 +1,15 @@
+@use '@styles/func';
+@use '@styles/mixins';
+
+.root { padding: func.rem(20) 0; }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: func.rem(12); }
+.item { grid-column: span 3; position: relative; border: 1px solid var(--color-accent-outline); background: var(--color-surface); cursor: pointer; overflow: hidden; }
+.thumb { display: block; width: 100%; aspect-ratio: 16/9; background: linear-gradient(180deg, rgba(23 255 127 / 10%), transparent), #111; }
+.caption { padding: func.rem(8) func.rem(10); font-size: func.rem(14); opacity: 0.9; }
+.item:hover { border-color: var(--color-accent-neon); transform: translateY(-2px); transition: transform 0.2s ease, border-color 0.2s ease; }
+
+.modalBackdrop { position: fixed; inset: 0; background: rgba(0 0 0 / 70%); display: grid; place-items: center; z-index: 1000; }
+.modal { width: min(90vw, 960px); aspect-ratio: 16/9; background: #000; border: 1px solid var(--color-accent-outline); }
+
+@include mixins.tablet { .item { grid-column: span 6; } }
+@include mixins.tablet-small { .item { grid-column: span 12; } }

@@ -1,0 +1,40 @@
+@use '@styles/func';
+
+.root { padding: func.rem(80) 0; }
+
+.card {
+  position: relative;
+  height: func.rem(260);
+  border-radius: func.rem(20);
+  overflow: hidden;
+  border: 1px solid var(--color-accent-outline);
+  background: radial-gradient(120% 80% at 20% 20%, rgba(23 255 127 / 12%), transparent 60%), var(--color-surface);
+}
+
+.neonRing {
+  position: absolute;
+  inset: -200% -200%;
+  background: conic-gradient(from 0deg, rgba(23 255 127 / 0.0), rgba(23 255 127 / 0.6), rgba(255 122 0 / 0.4), rgba(23 255 127 / 0.0));
+  filter: blur(30px);
+  animation: spin 14s linear infinite;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--color-text);
+  font-size: clamp(func.rem(20), 4vw, func.rem(32));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.card:hover {
+  border-color: var(--color-accent-neon);
+}

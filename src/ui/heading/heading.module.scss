@@ -1,0 +1,18 @@
+@use '@styles/func';
+@use '@styles/mixins';
+@use '@styles/variables';
+
+.root {
+  color: var(--color-text);
+  &_lg {
+    @include mixins.h1;
+  }
+
+  &_md {
+    @include mixins.h2;
+  }
+
+  &_sm {
+    @include mixins.h3;
+  }
+}
