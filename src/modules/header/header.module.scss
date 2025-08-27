@@ -42,6 +42,53 @@
   &:hover { color: var(--color-accent-neon); opacity: 1; transform: translateY(-1px); }
 }
 
+.authSection {
+  display: flex;
+  align-items: center;
+  gap: func.rem(16);
+  margin-left: func.rem(20);
+  padding-left: func.rem(20);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: func.rem(8);
+  font-size: func.rem(14);
+}
+
+.userEmail {
+  color: var(--color-accent-neon);
+  font-weight: 500;
+}
+
+.userRole {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: func.rem(12);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.logoutButton {
+  background: rgba(255, 107, 53, 0.1);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  color: #ff6b35;
+  font-size: func.rem(12);
+  padding: func.rem(6) func.rem(12);
+  
+  &:hover {
+    background: rgba(255, 107, 53, 0.2);
+    border-color: rgba(255, 107, 53, 0.5);
+  }
+}
+
+.version {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: func.rem(12);
+  margin-left: func.rem(16);
+}
+
 .sticky {
   position: sticky;
   top: 0;

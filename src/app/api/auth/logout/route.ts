@@ -1,28 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { deleteSession } from '@/shared/auth/utils'
+import { deleteFallbackSession } from '@/shared/db/fallback'
 import type { ApiResponse } from '@/shared/types/database'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
 	try {
 		const sessionToken = request.cookies.get('session')?.value
 
 		if (sessionToken) {
-			await deleteSession(sessionToken)
+			// Delete session from Redis
+			try {
+				await deleteSession(sessionToken)
+			} catch (error) {
+				// Delete from fallback storage
+				deleteFallbackSession(sessionToken)
+			}
 		}
 
+		// Clear session cookie
 		const response = NextResponse.json<ApiResponse<{ message: string }>>({
 			success: true,
-			message: 'Logged out successfully',
 			data: { message: 'Logged out successfully' }
 		})
 
-		// Clear session cookie
 		response.cookies.set('session', '', {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === 'production',
 			sameSite: 'lax',
-			maxAge: 0,
-			path: '/'
+			maxAge: 0 // Expire immediately
 		})
 
 		return response
