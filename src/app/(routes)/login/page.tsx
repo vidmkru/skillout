@@ -11,6 +11,7 @@ export default function LoginPage() {
 	const [email, setEmail] = useState('')
 	const [isLoading, setIsLoading] = useState(false)
 	const [message, setMessage] = useState('')
+	const [messageType, setMessageType] = useState<'success' | 'error'>('error')
 	const { login } = useAuth()
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -19,14 +20,22 @@ export default function LoginPage() {
 		setMessage('')
 
 		try {
-			await login(email)
-			setMessage('Вход выполнен успешно! Перенаправляем...')
-			// Redirect after successful login
-			setTimeout(() => {
-				window.location.href = '/'
-			}, 1000)
+			const result = await login(email)
+			
+			if (result.success) {
+				setMessageType('success')
+				setMessage('Вход выполнен успешно! Перенаправляем...')
+				// Redirect after successful login
+				setTimeout(() => {
+					window.location.href = '/'
+				}, 1000)
+			} else {
+				setMessageType('error')
+				setMessage(result.message)
+			}
 		} catch (error) {
-			setMessage('Ошибка входа. Проверьте email или зарегистрируйтесь.')
+			setMessageType('error')
+			setMessage('Ошибка входа. Попробуйте еще раз.')
 		} finally {
 			setIsLoading(false)
 		}
@@ -63,7 +72,7 @@ export default function LoginPage() {
 				</form>
 
 				{message && (
-					<div className={styles.message}>
+					<div className={`${styles.message} ${styles[messageType]}`}>
 						{message}
 					</div>
 				)}

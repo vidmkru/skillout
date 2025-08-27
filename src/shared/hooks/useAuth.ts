@@ -14,14 +14,16 @@ export function useAuth() {
 		try {
 			setLoading(true)
 
-			const response = await axiosInstance.post<{ success: boolean; message: string; data?: { message: string } }>('/api/auth/login', {
+			const response = await axiosInstance.post<{ success: boolean; data?: AuthResponse; error?: string }>('/api/auth/login', {
 				email
 			} as LoginRequest)
 
-			if (response.data.success) {
-				return { success: true, message: response.data.data?.message || 'Check your email for login link' }
+			if (response.data.success && response.data.data) {
+				// Set user data immediately after successful login
+				setUser(response.data.data.user)
+				return { success: true, message: 'Login successful' }
 			} else {
-				return { success: false, message: response.data.message || 'Login failed' }
+				return { success: false, message: response.data.error || 'Login failed' }
 			}
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Login failed'
@@ -29,7 +31,7 @@ export function useAuth() {
 		} finally {
 			setLoading(false)
 		}
-	}, [setLoading])
+	}, [setLoading, setUser])
 
 	const register = useCallback(async (email: string, role: 'creator' | 'producer', inviteCode?: string) => {
 		try {

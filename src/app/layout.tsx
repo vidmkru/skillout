@@ -1,55 +1,30 @@
-import { ReactNode } from 'react'
-import { Footer } from '@modules/footer'
-import { Header } from '@modules/header'
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import { Provider } from 'jotai'
+import { AuthProvider } from '@/shared/providers/AuthProvider'
+import './globals.scss'
 
-import '@styles/global.scss'
+const inter = Inter({ subsets: ['latin'] })
 
-import localFont from 'next/font/local'
-import { Provider } from '@service/provider'
-
-const font = localFont({
-  src: [
-    {
-      path: './fonts/neuemachina-light.woff2',
-      weight: '500',
-      style: 'normal'
-    },
-    {
-      path: './fonts/neuemachina-regular.woff2',
-      weight: '400',
-      style: 'normal'
-    },
-    {
-      path: './fonts/neuemachina-medium.woff2',
-      weight: '500',
-      style: 'normal'
-    },
-    {
-      path: './fonts/neuemachina-ultrabold.woff2',
-      weight: '800',
-      style: 'normal'
-    }
-  ]
-})
+export const metadata: Metadata = {
+	title: 'Hub.Skillout.pro - База данных специалистов генеративного видео',
+	description: 'Профессиональная база данных для специалистов по генеративному видео и ИИ',
+}
 
 export default function RootLayout({
-  children
-}: Readonly<{
-  children: ReactNode
-}>) {
-  return (
-    <html lang="ru">
-      <body className={font.className}>
-        <Provider>
-          <div id="root">
-            <Header />
-            {children}
-            <Footer />
-          </div>
-
-          <div id="modal-root" />
-        </Provider>
-      </body>
-    </html>
-  )
+	children,
+}: {
+	children: React.ReactNode
+}) {
+	return (
+		<html lang="ru">
+			<body className={inter.className}>
+				<Provider>
+					<AuthProvider>
+						{children}
+					</AuthProvider>
+				</Provider>
+			</body>
+		</html>
+	)
 }
