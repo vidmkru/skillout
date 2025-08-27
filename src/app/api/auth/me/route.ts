@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserBySession } from '@/shared/auth/utils'
 import type { ApiResponse, AuthResponse } from '@/shared/types/database'
-import { db } from '@/shared/db/redis'
 
 export const dynamic = 'force-dynamic'
 
