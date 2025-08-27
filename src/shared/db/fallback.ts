@@ -67,3 +67,29 @@ export function setFallbackSession(id: string, session: Session): void {
 export function deleteFallbackSession(id: string): void {
 	fallbackSessions.delete(id)
 }
+
+// Invite functions
+export function getFallbackInvite(id: string): Invite | null {
+	return fallbackInvites.get(id) || null
+}
+
+export function setFallbackInvite(id: string, invite: Invite): void {
+	fallbackInvites.set(id, invite)
+}
+
+export function getFallbackInvitesByUser(userId: string): Invite[] {
+	const invites = Array.from(fallbackInvites.values())
+	return invites.filter(invite => invite.createdBy === userId)
+}
+
+export function getFallbackInviteByCode(code: string): Invite | null {
+	const invites = Array.from(fallbackInvites.values())
+	return invites.find(invite => invite.code === code) || null
+}
+
+export function updateFallbackInvite(id: string, updates: Partial<Invite>): void {
+	const invite = fallbackInvites.get(id)
+	if (invite) {
+		fallbackInvites.set(id, { ...invite, ...updates })
+	}
+}

@@ -176,6 +176,33 @@ export const db = {
 		}
 	},
 
+	async getInviteByCode(code: string): Promise<Invite | null> {
+		try {
+			const keys = await redis.keys(`${KEY_PREFIXES.INVITE}*`)
+			if (keys.length === 0) return null
+
+			const invites = await redis.mget(...keys)
+			const invite = invites.find((i): i is Invite => i !== null && typeof i === 'object' && 'code' in i && i.code === code)
+			return invite || null
+		} catch (error) {
+			console.error('Redis getInviteByCode error:', error)
+			return null
+		}
+	},
+
+	async getInvitesByUser(userId: string): Promise<Invite[]> {
+		try {
+			const keys = await redis.keys(`${KEY_PREFIXES.INVITE}*`)
+			if (keys.length === 0) return []
+
+			const invites = await redis.mget(...keys)
+			return invites.filter((i): i is Invite => i !== null && typeof i === 'object' && 'createdBy' in i && i.createdBy === userId)
+		} catch (error) {
+			console.error('Redis getInvitesByUser error:', error)
+			return []
+		}
+	},
+
 	// Rating operations
 	async getRating(profileId: string): Promise<Rating | null> {
 		try {

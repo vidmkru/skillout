@@ -102,14 +102,15 @@ export interface Badge {
 
 // Invite interface
 export interface Invite {
+	id: string
 	code: string
-	issuedBy: string
-	issuedTo?: string
-	inviteType: InviteType
-	used: boolean
+	createdBy: string // userId who created the invite
+	createdFor: 'creator' | 'creatorPro' | 'producer' // role this invite is for
+	status: 'active' | 'used' | 'expired'
+	usedBy?: string // userId who used the invite
 	usedAt?: string
-	expiresAt: string
 	createdAt: string
+	expiresAt: string
 }
 
 // Rating interface
@@ -240,6 +241,23 @@ export interface InviteRequest {
 export interface InviteResponse {
 	code: string
 	expiresAt: string
+}
+
+export interface CreateInviteRequest {
+	role: 'creator' | 'creatorPro' | 'producer'
+	quantity?: number // default 1
+}
+
+export interface InviteStats {
+	totalCreated: number
+	totalUsed: number
+	active: number
+	expired: number
+	byRole: {
+		creator: number
+		creatorPro: number
+		producer: number
+	}
 }
 
 // Rating interfaces

@@ -1,151 +1,157 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { generateToken } from '@/shared/auth/utils'
-import { InviteType, UserRole } from '@/shared/types/enums'
-import type { Invite } from '@/shared/types/database'
+import { getUserBySession } from '@/shared/auth/utils'
+import { getFallbackSession, getFallbackUser, setFallbackInvite, getFallbackInvitesByUser } from '@/shared/db/fallback'
+import type { ApiResponse, Invite, CreateInviteRequest, InviteStats } from '@/shared/types/database'
 
+export const dynamic = 'force-dynamic'
+
+// GET - List user's invites
 export async function GET(request: NextRequest) {
 	try {
-		// Get current user from headers
-		const userId = request.headers.get('x-user-id')
-		if (!userId) {
-			return NextResponse.json(
-				{ error: 'Unauthorized' },
-				{ status: 401 }
-			)
+		const sessionToken = request.cookies.get('session')?.value
+
+		if (!sessionToken) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Authentication required'
+			}, { status: 401 })
 		}
 
-		const user = await db.getUser(userId)
+		// Get user from session
+		let user = null
+		try {
+			user = await getUserBySession(sessionToken)
+		} catch (error) {
+			const session = getFallbackSession(sessionToken)
+			if (session) {
+				user = getFallbackUser(session.userId)
+			}
+		}
+
 		if (!user) {
-			return NextResponse.json(
-				{ error: 'User not found' },
-				{ status: 404 }
-			)
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Invalid session'
+			}, { status: 401 })
 		}
 
-		// Get user's invite quota and usage
-		const quota = user.inviteQuota
-		const used = user.invitesUsed
+		// Get user's invites
+		let invites: Invite[] = []
+		try {
+			invites = await db.getInvitesByUser(user.id)
+		} catch (error) {
+			invites = getFallbackInvitesByUser(user.id)
+		}
 
-		// Get user's issued invites
-		const allInvites = await db.getAllInvites()
-		const userInvites = allInvites.filter(invite => invite.issuedBy === userId)
-
-		return NextResponse.json({
-			quota,
-			used,
-			available: {
-				creator: quota.creator - used.creator,
-				creatorPro: quota.creatorPro - used.creatorPro,
-				producer: quota.producer - used.producer
-			},
-			invites: userInvites
+		return NextResponse.json<ApiResponse<Invite[]>>({
+			success: true,
+			data: invites
 		})
+
 	} catch (error) {
 		console.error('Get invites error:', error)
-		return NextResponse.json(
-			{ error: 'Failed to fetch invites' },
-			{ status: 500 }
-		)
+		return NextResponse.json<ApiResponse<null>>({
+			success: false,
+			error: 'Internal server error'
+		}, { status: 500 })
 	}
 }
 
+// POST - Create new invite
 export async function POST(request: NextRequest) {
 	try {
-		const body = await request.json()
-		const { inviteType } = body
+		const sessionToken = request.cookies.get('session')?.value
 
-		// Get current user from headers
-		const userId = request.headers.get('x-user-id')
-		if (!userId) {
-			return NextResponse.json(
-				{ error: 'Unauthorized' },
-				{ status: 401 }
-			)
+		if (!sessionToken) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Authentication required'
+			}, { status: 401 })
 		}
 
-		const user = await db.getUser(userId)
+		// Get user from session
+		let user = null
+		try {
+			user = await getUserBySession(sessionToken)
+		} catch (error) {
+			const session = getFallbackSession(sessionToken)
+			if (session) {
+				user = getFallbackUser(session.userId)
+			}
+		}
+
 		if (!user) {
-			return NextResponse.json(
-				{ error: 'User not found' },
-				{ status: 404 }
-			)
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Invalid session'
+			}, { status: 401 })
 		}
 
-		// Validate invite type
-		if (!Object.values(InviteType).includes(inviteType)) {
-			return NextResponse.json(
-				{ error: 'Invalid invite type' },
-				{ status: 400 }
-			)
+		const body: CreateInviteRequest = await request.json()
+		const { role, quantity = 1 } = body
+
+		// Check if user has quota for this role
+		const userQuota = user.inviteQuota[role] || 0
+		const userUsed = user.invitesUsed[role] || 0
+
+		if (userUsed >= userQuota) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: `No invites left for ${role} role`
+			}, { status: 403 })
 		}
 
-		// Check if user has quota for this invite type
-		const inviteTypeKey = inviteType as keyof typeof user.inviteQuota
-		if (user.invitesUsed[inviteTypeKey] >= user.inviteQuota[inviteTypeKey]) {
-			return NextResponse.json(
-				{ error: 'No invites available for this type' },
-				{ status: 403 }
-			)
+		// Create invites
+		const invites: Invite[] = []
+		const now = new Date()
+		const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days
+
+		for (let i = 0; i < Math.min(quantity, userQuota - userUsed); i++) {
+			const invite: Invite = {
+				id: generateToken(16),
+				code: generateToken(8).toUpperCase(),
+				createdBy: user.id,
+				createdFor: role,
+				status: 'active',
+				createdAt: now.toISOString(),
+				expiresAt: expiresAt.toISOString()
+			}
+
+			// Save invite
+			try {
+				await db.setInvite(invite.id, invite)
+			} catch (error) {
+				setFallbackInvite(invite.id, invite)
+			}
+
+			invites.push(invite)
 		}
 
-		// Check role permissions
-		const canIssueInvite = (issuerRole: UserRole, targetType: InviteType) => {
-			switch (issuerRole) {
-				case UserRole.Admin:
-					return true // Admin can issue any type
-				case UserRole.CreatorPro:
-					return targetType === InviteType.Creator || targetType === InviteType.Producer
-				case UserRole.Creator:
-					return targetType === InviteType.Creator || targetType === InviteType.Producer
-				case UserRole.Producer:
-					return false // Producers cannot issue invites
-				default:
-					return false
+		// Update user's used invites
+		user.invitesUsed[role] = (user.invitesUsed[role] || 0) + invites.length
+		try {
+			await db.setUser(user.id, user)
+		} catch (error) {
+			// Update fallback user
+			const fallbackUser = getFallbackUser(user.id)
+			if (fallbackUser) {
+				fallbackUser.invitesUsed[role] = user.invitesUsed[role]
+				setFallbackUser(user.id, fallbackUser)
 			}
 		}
 
-		if (!canIssueInvite(user.role, inviteType)) {
-			return NextResponse.json(
-				{ error: 'You cannot issue this type of invite' },
-				{ status: 403 }
-			)
-		}
-
-		// Generate invite code
-		const inviteCode = generateToken(8).toUpperCase()
-		const now = new Date().toISOString()
-		const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
-
-		const invite: Invite = {
-			code: inviteCode,
-			issuedBy: userId,
-			inviteType,
-			used: false,
-			expiresAt,
-			createdAt: now
-		}
-
-		await db.setInvite(inviteCode, invite)
-
-		// Update user's invite usage
-		user.invitesUsed[inviteTypeKey]++
-		await db.setUser(userId, user)
-
-		return NextResponse.json({
+		return NextResponse.json<ApiResponse<Invite[]>>({
 			success: true,
-			invite: {
-				code: inviteCode,
-				type: inviteType,
-				expiresAt,
-				issuedAt: now
-			}
+			data: invites
 		})
+
 	} catch (error) {
 		console.error('Create invite error:', error)
-		return NextResponse.json(
-			{ error: 'Failed to create invite' },
-			{ status: 500 }
-		)
+		return NextResponse.json<ApiResponse<null>>({
+			success: false,
+			error: 'Internal server error'
+		}, { status: 500 })
 	}
 }

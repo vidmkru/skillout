@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { generateToken } from '@/shared/auth/utils'
 import { UserRole, SubscriptionTier } from '@/shared/types/enums'
-import { getFallbackUserByEmail, setFallbackUser } from '@/shared/db/fallback'
+import { getFallbackUserByEmail, setFallbackUser, getFallbackInviteByCode, updateFallbackInvite } from '@/shared/db/fallback'
 import type { User } from '@/shared/types/database'
 
 export async function POST(request: NextRequest) {
@@ -67,8 +67,50 @@ export async function POST(request: NextRequest) {
 				)
 			}
 
-			// For demo purposes, accept any invite code
-			console.log('✅ Demo mode: accepting any invite code for creators')
+			// Validate invite code
+			console.log('🔍 Validating invite code:', inviteCode)
+			let invite = null
+			try {
+				invite = await db.getInviteByCode(inviteCode)
+			} catch (error) {
+				console.log('⚠️ Redis failed, checking fallback storage...')
+				invite = getFallbackInviteByCode(inviteCode)
+			}
+
+			if (!invite) {
+				console.log('❌ Invalid invite code:', inviteCode)
+				return NextResponse.json(
+					{ error: 'Invalid invite code' },
+					{ status: 400 }
+				)
+			}
+
+			if (invite.status !== 'active') {
+				console.log('❌ Invite is not active:', invite.status)
+				return NextResponse.json(
+					{ error: 'Invite code has expired or already used' },
+					{ status: 400 }
+				)
+			}
+
+			if (invite.createdFor !== role) {
+				console.log('❌ Invite is for different role:', invite.createdFor, 'expected:', role)
+				return NextResponse.json(
+					{ error: 'Invite code is for different role' },
+					{ status: 400 }
+				)
+			}
+
+			// Check if invite is expired
+			if (new Date(invite.expiresAt) < new Date()) {
+				console.log('❌ Invite has expired:', invite.expiresAt)
+				return NextResponse.json(
+					{ error: 'Invite code has expired' },
+					{ status: 400 }
+				)
+			}
+
+			console.log('✅ Invite code is valid')
 		}
 
 		// Create user
@@ -115,6 +157,32 @@ export async function POST(request: NextRequest) {
 			setFallbackUser(userId, user)
 			storageType = 'fallback'
 			console.log('✅ User saved to fallback storage')
+		}
+
+		// Mark invite as used if it was provided
+		if (inviteCode) {
+			console.log('🔍 Marking invite as used:', inviteCode)
+			try {
+				const invite = await db.getInviteByCode(inviteCode)
+				if (invite) {
+					invite.status = 'used'
+					invite.usedBy = userId
+					invite.usedAt = now
+					await db.setInvite(invite.id, invite)
+					console.log('✅ Invite marked as used in Redis')
+				}
+			} catch (error) {
+				console.log('⚠️ Redis failed, updating fallback invite...')
+				const fallbackInvite = getFallbackInviteByCode(inviteCode)
+				if (fallbackInvite) {
+					updateFallbackInvite(fallbackInvite.id, {
+						status: 'used',
+						usedBy: userId,
+						usedAt: now
+					})
+					console.log('✅ Invite marked as used in fallback')
+				}
+			}
 		}
 
 		// Create initial subscription
