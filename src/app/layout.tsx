@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Provider } from 'jotai'
 import { AuthProvider } from '@/shared/providers/AuthProvider'
-import './globals.scss'
+import '@/shared/styles/global.scss'
 
 const inter = Inter({ subsets: ['latin'] })
 

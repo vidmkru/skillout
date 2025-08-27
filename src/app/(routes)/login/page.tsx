@@ -21,7 +21,7 @@ export default function LoginPage() {
 
 		try {
 			const result = await login(email)
-			
+
 			if (result.success) {
 				setMessageType('success')
 				setMessage('Вход выполнен успешно! Перенаправляем...')
