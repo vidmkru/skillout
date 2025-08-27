@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { UserRole } from '@/shared/types/enums'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
 	try {
 		// Get current user from headers

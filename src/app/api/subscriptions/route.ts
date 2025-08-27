@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import type { ApiResponse, Subscription } from '@/shared/types/database'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
 	try {
 		// Get current user from headers

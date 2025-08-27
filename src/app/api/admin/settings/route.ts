@@ -3,6 +3,8 @@ import { db } from '@/shared/db/redis'
 import type { AdminSettings } from '@/shared/types/database'
 import { UserRole } from '@/shared/types/enums'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
 	try {
 		// Get current user from headers

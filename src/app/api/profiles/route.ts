@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { checkRedisConnection } from '@/shared/db/redis'
+import { db } from '@/shared/db/redis'
 import type { CreatorProfile } from '@/shared/types/database'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
 	try {

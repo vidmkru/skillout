@@ -3,6 +3,8 @@ import { db } from '@/shared/db/redis'
 import { verifyMagicLinkToken, createSession, createAuthResponse } from '@/shared/auth/utils'
 import type { ApiResponse, AuthResponse } from '@/shared/types/database'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url)
