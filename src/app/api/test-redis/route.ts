@@ -25,7 +25,7 @@ export async function GET() {
 			message: 'Redis connection working',
 			test: {
 				set: 'success',
-				get: retrieved ? JSON.parse(retrieved) : null
+				get: retrieved
 			}
 		})
 	} catch (error) {
