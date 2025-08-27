@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { generateToken } from '@/shared/auth/utils'
 import { UserRole, SubscriptionTier } from '@/shared/types/enums'
+import { getFallbackUserByEmail, setFallbackUser } from '@/shared/db/fallback'
 import type { User } from '@/shared/types/database'
-
-// Fallback storage for demo purposes
-const fallbackUsers = new Map<string, User>()
 
 export async function POST(request: NextRequest) {
 	try {
@@ -47,14 +45,7 @@ export async function POST(request: NextRequest) {
 			existingUser = await db.getUserByEmail(email)
 		} catch (error) {
 			console.log('⚠️ Redis failed, checking fallback storage...')
-			// Check fallback storage
-			const fallbackUsersArray = Array.from(fallbackUsers.values())
-			for (const user of fallbackUsersArray) {
-				if (user.email.toLowerCase() === email.toLowerCase()) {
-					existingUser = user
-					break
-				}
-			}
+			existingUser = getFallbackUserByEmail(email)
 		}
 
 		if (existingUser) {
@@ -115,12 +106,14 @@ export async function POST(request: NextRequest) {
 
 		// Try to save to Redis, fallback to memory if it fails
 		console.log('💾 Saving user...')
+		let storageType = 'redis'
 		try {
 			await db.setUser(userId, user)
 			console.log('✅ User saved to Redis successfully')
 		} catch (error) {
 			console.log('⚠️ Redis failed, saving to fallback storage...')
-			fallbackUsers.set(userId, user)
+			setFallbackUser(userId, user)
+			storageType = 'fallback'
 			console.log('✅ User saved to fallback storage')
 		}
 
@@ -142,7 +135,7 @@ export async function POST(request: NextRequest) {
 			console.log('⚠️ Redis failed, subscription not saved (demo mode)')
 		}
 
-		console.log('🎉 Registration completed successfully:', { userId, email, role })
+		console.log('🎉 Registration completed successfully:', { userId, email, role, storageType })
 
 		return NextResponse.json({
 			success: true,
@@ -152,7 +145,7 @@ export async function POST(request: NextRequest) {
 				email: user.email,
 				role: user.role
 			},
-			storage: fallbackUsers.has(userId) ? 'fallback' : 'redis'
+			storage: storageType
 		})
 	} catch (error) {
 		console.error('💥 Registration error:', error)
