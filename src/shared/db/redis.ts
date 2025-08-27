@@ -1,10 +1,17 @@
 import { Redis } from '@upstash/redis'
 import type { User, Session, CreatorProfile, Invite, Rating, Subscription, AdminSettings } from '../types/database'
 
-// Initialize Upstash Redis
-const redis = Redis.fromEnv()
+// Initialize Upstash Redis with existing environment variables
+const redis = new Redis({
+	url: process.env.BU_KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '',
+	token: process.env.BU_KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '',
+})
 
-console.log('🔧 Upstash Redis initialized')
+console.log('🔧 Upstash Redis initialized with:', {
+	hasUrl: !!process.env.BU_KV_REST_API_URL || !!process.env.UPSTASH_REDIS_REST_URL,
+	hasToken: !!process.env.BU_KV_REST_API_TOKEN || !!process.env.UPSTASH_REDIS_REST_TOKEN,
+	env: process.env.NODE_ENV
+})
 
 // Redis key prefixes for different data types
 export const KEY_PREFIXES = {
