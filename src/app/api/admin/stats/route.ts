@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
 		}
 
 		const totalInvites = allInvites.length
-		const activeInvites = allInvites.filter(invite => !invite.used).length
-		const usedInvites = allInvites.filter(invite => invite.used).length
+		const activeInvites = allInvites.filter(invite => invite.status === 'active').length
+		const usedInvites = allInvites.filter(invite => invite.status === 'used').length
 
 		return NextResponse.json({
 			totalUsers,

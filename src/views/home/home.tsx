@@ -3,6 +3,7 @@ import { HomeHero } from '@/modules/home-hero'
 import { HomeOverview } from '@/modules/home-overview'
 import { HomeHowItWorks } from '@/modules/home-how-it-works'
 import { WowCard } from '@/modules/wow-card'
+import { UserInfo } from '@/modules/user-info'
 import classNames from 'classnames'
 
 import styles from './home.module.scss'
@@ -14,6 +15,7 @@ const Home: FC<HomeProps> = ({ className }) => {
   return (
     <main className={rootClassName}>
       <HomeHero />
+      <UserInfo />
       <HomeOverview />
       <HomeHowItWorks />
       <WowCard />
