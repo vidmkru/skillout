@@ -12,19 +12,35 @@ export const fallbackSubscriptions = new Map<string, Subscription>()
 export const fallbackAdminSettings: AdminSettings = {
 	id: 'admin-settings',
 	inviteQuotas: {
-		admin: 100,
-		creator: 5,
-		'creator-pro': 10,
-		producer: 0
+		admin: {
+			creator: 100,
+			creatorPro: 50,
+			producer: 200
+		},
+		creator: {
+			creator: 5,
+			creatorPro: 0,
+			producer: 10
+		},
+		creatorPro: {
+			creator: 10,
+			creatorPro: 2,
+			producer: 20
+		}
 	},
-	registrationEnabled: true,
-	maintenanceMode: false,
+	paywallSettings: {
+		contactInfo: true,
+		portfolioDetails: true,
+		recommendations: true,
+		achievements: true
+	},
 	updatedAt: new Date().toISOString()
 }
 
 // Helper functions for fallback storage
 export function getFallbackUserByEmail(email: string): User | null {
-	for (const user of fallbackUsers.values()) {
+	const users = Array.from(fallbackUsers.values())
+	for (const user of users) {
 		if (user.email.toLowerCase() === email.toLowerCase()) {
 			return user
 		}

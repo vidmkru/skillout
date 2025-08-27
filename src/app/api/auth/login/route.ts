@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 			const sessionId = Math.random().toString(36).substring(2, 15)
 			const now = new Date()
 			const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
-			
+
 			session = {
 				id: sessionId,
 				userId: user.id,
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 				userAgent: request.headers.get('user-agent') || undefined,
 				ip: request.headers.get('x-forwarded-for') || request.ip || undefined,
 			}
-			
+
 			setFallbackSession(sessionId, session)
 			console.log('✅ Session created in fallback')
 		}
