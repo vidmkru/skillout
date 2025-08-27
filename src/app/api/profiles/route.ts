@@ -12,23 +12,13 @@ export async function GET(request: NextRequest) {
 		const search = searchParams.get('search') || ''
 		const specialization = searchParams.get('specialization') || ''
 
-		// Check if Redis is available
-		const isRedisAvailable = await checkRedisConnection()
-
 		let profiles: CreatorProfile[] = []
 
-		if (isRedisAvailable) {
-			// Try to get profiles from Redis
-			try {
-				const { db } = await import('@/shared/db/redis')
-				profiles = await db.getAllProfiles()
-			} catch (error) {
-				console.error('Failed to get profiles from Redis:', error)
-				profiles = []
-			}
-		} else {
-			// Return empty array when Redis is not available
-			console.log('Redis not available, returning empty profiles')
+		// Try to get profiles from Redis
+		try {
+			profiles = await db.getAllProfiles()
+		} catch (error) {
+			console.error('Failed to get profiles from Redis:', error)
 			profiles = []
 		}
 
@@ -57,7 +47,7 @@ export async function GET(request: NextRequest) {
 				total: filteredProfiles.length,
 				totalPages: Math.ceil(filteredProfiles.length / limit)
 			},
-			dataSource: isRedisAvailable ? 'redis' : 'none'
+			dataSource: profiles.length > 0 ? 'redis' : 'none'
 		})
 	} catch (error) {
 		console.error('Profiles API error:', error)
