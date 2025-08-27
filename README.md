@@ -119,9 +119,40 @@ const IconExample = () => (
 }
 ```
 
-## Deploy on Vercel
+## 🚀 Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Redis Setup for Vercel
 
+1. **Add Redis Addon to your Vercel project:**
+   - Go to your Vercel project dashboard
+   - Navigate to "Storage" tab
+   - Add "Redis" addon
+   - Copy the `REDIS_URL` from the addon settings
+
+2. **Set Environment Variables:**
+   - In your Vercel project settings, add these environment variables:
+   ```
+   REDIS_URL=redis://username:password@host:port
+   MAGIC_LINK_SECRET=your-secret-key-here
+   PASSWORD_SALT=your-salt-here
+   NEXT_PUBLIC_BASE_URL=https://your-domain.vercel.app
+   ```
+
+3. **Local Development:**
+   - Copy `.env.example` to `.env.local`
+   - For local Redis, use:
+   ```
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
+   REDIS_PASSWORD=
+   REDIS_DB=0
+   ```
+   - For Vercel Redis locally, use the `REDIS_URL` from your addon
+
+### Testing Redis Connection
+
+Visit `/api/test-redis` to test your Redis connection and basic operations.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

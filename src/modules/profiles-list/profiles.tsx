@@ -1,47 +1,129 @@
 "use client"
-import { FC, useMemo, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import classNames from 'classnames'
+import { useRouter } from 'next/navigation'
 
-import { Wrapper, Input } from '@/ui'
+import { Wrapper, Heading, Button } from '@/ui'
+import { axiosInstance } from '@/shared/api'
+import type { CreatorProfile, PaginatedResponse } from '@/shared/types/database'
 
 import styles from './profiles.module.scss'
-import { ProfilesListProps } from './profiles.types'
-import { CreatorProfile } from '@/shared/types/common'
 
-const MOCK_PROFILES: CreatorProfile[] = [
-	{ id: '1', name: 'Анна Видеомейкер', specialization: ['Видеомонтаж'], tools: ['Runway'], experience: '2+', rating: 4.8 },
-	{ id: '2', name: 'Иван CGI', specialization: ['CGI', '3D'], tools: ['Blender', 'MJ'], experience: '1-2', rating: 4.5 },
-	{ id: '3', name: 'Мария Prompt', specialization: ['Промпт-инженер'], tools: ['MJ', 'Veo'], experience: 'lt1', rating: 4.2 },
-	{ id: '4', name: 'Олег VFX', specialization: ['VFX'], tools: ['Nuke'], experience: '2+', rating: 4.9 }
-]
+interface ProfilesListProps { className?: string }
 
 const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
-	const rootClassName = classNames(styles.root, className)
-	const [query, setQuery] = useState('')
+	const router = useRouter()
+	const [profiles, setProfiles] = useState<CreatorProfile[]>([])
+	const [loading, setLoading] = useState(true)
+	const [error, setError] = useState<string | null>(null)
+	const [page, setPage] = useState(1)
+	const [hasMore, setHasMore] = useState(true)
 
-	const filtered = useMemo(() => {
-		const q = query.toLowerCase().trim()
-		if (!q) return MOCK_PROFILES
-		return MOCK_PROFILES.filter((p) =>
-			[p.name, ...p.specialization, ...p.tools].join(' ').toLowerCase().includes(q)
+	const fetchProfiles = async (pageNum: number = 1) => {
+		try {
+			setLoading(true)
+			const response = await axiosInstance.get<{ success: boolean; data: PaginatedResponse<CreatorProfile> }>(
+				`/api/profiles?page=${pageNum}&limit=12`
+			)
+
+			if (response.data.success && response.data.data) {
+				if (pageNum === 1) {
+					setProfiles(response.data.data.items)
+				} else {
+					setProfiles(prev => [...prev, ...response.data.data!.items])
+				}
+				setHasMore(response.data.data.page < response.data.data.totalPages)
+			} else {
+				setError('Failed to load profiles')
+			}
+		} catch (err) {
+			console.error('Error fetching profiles:', err)
+			setError('Failed to load profiles')
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	useEffect(() => {
+		fetchProfiles()
+	}, [])
+
+	const loadMore = () => {
+		if (!loading && hasMore) {
+			const nextPage = page + 1
+			setPage(nextPage)
+			fetchProfiles(nextPage)
+		}
+	}
+
+	const handleProfileClick = (id: string) => {
+		router.push(`/profile/${id}`)
+	}
+
+	if (error) {
+		return (
+			<section className={classNames(styles.root, className)}>
+				<Wrapper>
+					<Heading tagName="h2">Профили</Heading>
+					<div className={styles.error}>
+						<p>{error}</p>
+						<Button onClick={() => fetchProfiles()}>Попробовать снова</Button>
+					</div>
+				</Wrapper>
+			</section>
 		)
-	}, [query])
+	}
 
 	return (
-		<section className={rootClassName}>
+		<section className={classNames(styles.root, className)}>
 			<Wrapper>
-				<div className={styles.toolbar}>
-					<Input placeholder="Поиск" value={query} onChange={(e) => setQuery(e.target.value)} />
-				</div>
-				<div className={styles.grid}>
-					{filtered.map((p) => (
-						<article key={p.id} className={styles.card}>
-							<div className={styles.name}>{p.name}</div>
-							<div>{p.specialization.join(', ')}</div>
-							<div>Инструменты: {p.tools.join(', ')}</div>
-						</article>
-					))}
-				</div>
+				<Heading tagName="h2">Профили специалистов</Heading>
+
+				{loading && profiles.length === 0 ? (
+					<div className={styles.loading}>Загрузка профилей...</div>
+				) : (
+					<>
+						<div className={styles.grid}>
+							{profiles.map((profile) => (
+								<article key={profile.id} className={styles.card} onClick={() => handleProfileClick(profile.id)}>
+									<div className={styles.avatar}>
+										{profile.avatar ? (
+											<img src={profile.avatar} alt={profile.name} />
+										) : (
+											<div className={styles.avatarPlaceholder}>
+												{profile.name.charAt(0).toUpperCase()}
+											</div>
+										)}
+									</div>
+									<div className={styles.content}>
+										<h3 className={styles.name}>{profile.name}</h3>
+										<p className={styles.bio}>{profile.bio}</p>
+										<div className={styles.specialization}>
+											{profile.specialization.slice(0, 2).map((spec, i) => (
+												<span key={i} className={styles.tag}>{spec}</span>
+											))}
+											{profile.specialization.length > 2 && (
+												<span className={styles.more}>+{profile.specialization.length - 2}</span>
+											)}
+										</div>
+										<div className={styles.rating}>
+											<span className={styles.stars}>★★★★★</span>
+											<span className={styles.ratingValue}>{profile.rating.toFixed(1)}</span>
+										</div>
+									</div>
+								</article>
+							))}
+						</div>
+
+						{hasMore && (
+							<div className={styles.loadMore}>
+								<Button onClick={loadMore} disabled={loading}>
+									{loading ? 'Загрузка...' : 'Загрузить еще'}
+								</Button>
+							</div>
+						)}
+					</>
+				)}
 			</Wrapper>
 		</section>
 	)

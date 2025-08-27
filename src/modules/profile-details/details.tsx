@@ -1,60 +1,196 @@
 "use client"
-import { FC, useMemo } from 'react'
-import { Wrapper, Button } from '@/ui'
-import { useAtom } from 'jotai'
+import { FC, useEffect, useState, useCallback } from 'react'
+import classNames from 'classnames'
+import { useParams } from 'next/navigation'
+import { useAtomValue } from 'jotai'
+
+import { Wrapper, Heading, Button } from '@/ui'
+import { axiosInstance } from '@/shared/api'
 import { subscriptionAtom } from '@/shared/atoms/subscriptionAtom'
-import { Portfolio } from '@/modules/portfolio'
+import type { CreatorProfile } from '@/shared/types/database'
 
 import styles from './details.module.scss'
-import { ProfileDetailsProps } from './details.types'
-import { CreatorProfile } from '@/shared/types/common'
 
-const MOCK: Record<string, CreatorProfile> = {
-	'1': { id: '1', name: 'Анна Видеомейкер', specialization: ['Видеомонтаж'], tools: ['Runway'], experience: '2+', rating: 4.8, badges: ['Hackathon Finalist', 'Expert Verified'] },
-	'2': { id: '2', name: 'Иван CGI', specialization: ['CGI', '3D'], tools: ['Blender', 'MJ'], experience: '1-2', rating: 4.5, badges: ['Skillout Participant'] }
-}
+interface ProfileDetailsProps { className?: string }
 
-const ProfileDetails: FC<ProfileDetailsProps> = ({ id }) => {
-	const profile = useMemo(() => MOCK[id], [id])
-	const [tier] = useAtom(subscriptionAtom)
+const ProfileDetails: FC<ProfileDetailsProps> = ({ className }) => {
+	const params = useParams()
+	const profileId = params.id as string
+	const subscriptionTier = useAtomValue(subscriptionAtom)
 
-	if (!profile) return <Wrapper>Профиль не найден</Wrapper>
+	const [profile, setProfile] = useState<CreatorProfile | null>(null)
+	const [loading, setLoading] = useState(true)
+	const [error, setError] = useState<string | null>(null)
+
+	const fetchProfile = useCallback(async () => {
+		try {
+			setLoading(true)
+			const response = await axiosInstance.get<{ success: boolean; data: CreatorProfile }>(
+				`/api/profiles/${profileId}`
+			)
+
+			if (response.data.success && response.data.data) {
+				setProfile(response.data.data)
+			} else {
+				setError('Profile not found')
+			}
+		} catch (err) {
+			console.error('Error fetching profile:', err)
+			setError('Failed to load profile')
+		} finally {
+			setLoading(false)
+		}
+	}, [profileId])
+
+	useEffect(() => {
+		if (profileId) {
+			fetchProfile()
+		}
+	}, [profileId, fetchProfile])
+
+	const canViewContacts = subscriptionTier === 'producer' || subscriptionTier === 'creator-pro'
+
+	if (loading) {
+		return (
+			<section className={classNames(styles.root, className)}>
+				<Wrapper>
+					<div className={styles.loading}>Загрузка профиля...</div>
+				</Wrapper>
+			</section>
+		)
+	}
+
+	if (error || !profile) {
+		return (
+			<section className={classNames(styles.root, className)}>
+				<Wrapper>
+					<div className={styles.error}>
+						<p>{error || 'Profile not found'}</p>
+						<Button onClick={fetchProfile}>Попробовать снова</Button>
+					</div>
+				</Wrapper>
+			</section>
+		)
+	}
 
 	return (
-		<section className={styles.root}>
+		<section className={classNames(styles.root, className)}>
 			<Wrapper>
-				<header className={styles.header}>
-					<div className={styles.avatar} />
-					<div>
-						<div>{profile.name}</div>
-						<div>{profile.specialization.join(', ')}</div>
+				<div className={styles.header}>
+					<div className={styles.avatar}>
+						{profile.avatar ? (
+							<img src={profile.avatar} alt={profile.name} />
+						) : (
+							<div className={styles.avatarPlaceholder}>
+								{profile.name.charAt(0).toUpperCase()}
+							</div>
+						)}
 					</div>
-				</header>
-
-				<div className={styles.section}>
-					<div>Инструменты: {profile.tools.join(', ')}</div>
-					<div>Опыт: {profile.experience}</div>
-					<div className={styles.rating}>Рейтинг: {profile.rating?.toFixed(1)}</div>
-					<div className={styles.badges}>
-						{(profile.badges || []).map((b, i) => (
-							<span key={i} className={`${styles.badge} ${/Expert|VIP/i.test(b) ? styles['badge--vip'] : ''}`}>{b}</span>
-						))}
+					<div className={styles.info}>
+						<Heading tagName="h1" className={styles.name}>{profile.name}</Heading>
+						<p className={styles.bio}>{profile.bio}</p>
+						<div className={styles.rating}>
+							<span className={styles.stars}>★★★★★</span>
+							<span className={styles.ratingValue}>{profile.rating.toFixed(1)}</span>
+							<span className={styles.recommendations}>({profile.recommendations.length} рекомендаций)</span>
+						</div>
 					</div>
 				</div>
 
-				{tier === 'producer' ? (
+				<div className={styles.badges}>
+					{profile.badges.map((badge) => (
+						<div key={badge.id} className={styles.badge} title={badge.description}>
+							{badge.icon} {badge.name}
+						</div>
+					))}
+				</div>
+
+				<div className={styles.sections}>
 					<div className={styles.section}>
-						<div>Телеграм: @username</div>
-						<div>Почта: user@example.com</div>
+						<h3>Специализация</h3>
+						<div className={styles.tags}>
+							{profile.specialization.map((spec, i) => (
+								<span key={i} className={styles.tag}>{spec}</span>
+							))}
+						</div>
 					</div>
-				) : (
+
 					<div className={styles.section}>
-						<div className={styles.contacts}>Контакты скрыты. Доступ по подписке или инвайту.</div>
-						<Button as="a" isRouteLink href="/subscriptions">Оформить доступ</Button>
+						<h3>Инструменты</h3>
+						<div className={styles.tags}>
+							{profile.tools.map((tool, i) => (
+								<span key={i} className={styles.tag}>{tool}</span>
+							))}
+						</div>
 					</div>
-				)}
+
+					<div className={styles.section}>
+						<h3>Опыт</h3>
+						<p>{profile.experience}</p>
+					</div>
+
+					{profile.clients.length > 0 && (
+						<div className={styles.section}>
+							<h3>Клиенты</h3>
+							<ul>
+								{profile.clients.map((client, i) => (
+									<li key={i}>{client}</li>
+								))}
+							</ul>
+						</div>
+					)}
+
+					{profile.achievements.length > 0 && (
+						<div className={styles.section}>
+							<h3>Достижения</h3>
+							<div className={styles.achievements}>
+								{profile.achievements.map((achievement) => (
+									<div key={achievement.id} className={styles.achievement}>
+										<h4>{achievement.title}</h4>
+										<p>{achievement.description}</p>
+										<span className={styles.date}>{achievement.date}</span>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
+
+					<div className={styles.section}>
+						<h3>Контакты</h3>
+						{canViewContacts ? (
+							<div className={styles.contacts}>
+								{profile.contacts.telegram && (
+									<a href={`https://t.me/${profile.contacts.telegram}`} target="_blank" rel="noopener noreferrer">
+										Telegram: @{profile.contacts.telegram}
+									</a>
+								)}
+								{profile.contacts.instagram && (
+									<a href={`https://instagram.com/${profile.contacts.instagram}`} target="_blank" rel="noopener noreferrer">
+										Instagram: @{profile.contacts.instagram}
+									</a>
+								)}
+								{profile.contacts.behance && (
+									<a href={profile.contacts.behance} target="_blank" rel="noopener noreferrer">
+										Behance
+									</a>
+								)}
+								{profile.contacts.linkedin && (
+									<a href={profile.contacts.linkedin} target="_blank" rel="noopener noreferrer">
+										LinkedIn
+									</a>
+								)}
+							</div>
+						) : (
+							<div className={styles.contactsGated}>
+								<p>Контакты доступны только для подписчиков</p>
+								<Button onClick={() => window.location.href = '/subscriptions'}>
+									Оформить доступ
+								</Button>
+							</div>
+						)}
+					</div>
+				</div>
 			</Wrapper>
-			<Portfolio />
 		</section>
 	)
 }
