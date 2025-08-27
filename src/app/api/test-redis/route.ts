@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { redis, checkRedisConnection } from '@/shared/db/redis'
 
 export const dynamic = 'force-dynamic'
