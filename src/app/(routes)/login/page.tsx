@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
@@ -12,8 +11,6 @@ export default function LoginPage() {
 	const [email, setEmail] = useState('')
 	const [isLoading, setIsLoading] = useState(false)
 	const [message, setMessage] = useState('')
-	const searchParams = useSearchParams()
-	const redirect = searchParams.get('redirect') || '/'
 	const { login } = useAuth()
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -34,7 +31,7 @@ export default function LoginPage() {
 	return (
 		<div className={styles.container}>
 			<div className={styles.form}>
-				<Heading level={1} className={styles.title}>
+				<Heading size="lg" tagName="h1" className={styles.title}>
 					Вход в систему
 				</Heading>
 

@@ -1,0 +1,189 @@
+@use '@styles/func' as *;
+
+.container {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: rem(20);
+	background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+}
+
+.form {
+	background: rgba(255, 255, 255, 0.05);
+	backdrop-filter: blur(10px);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: rem(16);
+	padding: rem(40);
+	width: 100%;
+	max-width: rem(500);
+	box-shadow: 0 rem(8) rem(32) rgba(0, 0, 0, 0.3);
+}
+
+.title {
+	color: #ffffff;
+	margin-bottom: rem(8);
+	text-align: center;
+}
+
+.subtitle {
+	color: rgba(255, 255, 255, 0.7);
+	text-align: center;
+	margin-bottom: rem(32);
+	font-size: rem(16);
+}
+
+.formContent {
+	display: flex;
+	flex-direction: column;
+	gap: rem(20);
+}
+
+.roleSelector {
+	display: flex;
+	flex-direction: column;
+	gap: rem(12);
+}
+
+.label {
+	color: rgba(255, 255, 255, 0.9);
+	font-weight: 500;
+	font-size: rem(14);
+}
+
+.roleOptions {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: rem(12);
+}
+
+.roleOption {
+	display: flex;
+	align-items: center;
+	gap: rem(8);
+	padding: rem(12) rem(16);
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: rem(8);
+	cursor: pointer;
+	transition: all 0.3s ease;
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.1);
+		border-color: rgba(255, 107, 53, 0.3);
+	}
+}
+
+.radio {
+	display: none;
+}
+
+.roleLabel {
+	color: rgba(255, 255, 255, 0.8);
+	font-size: rem(14);
+	font-weight: 500;
+	transition: color 0.3s ease;
+}
+
+.roleOption input:checked + .roleLabel {
+	color: #ff6b35;
+}
+
+.roleOption input:checked {
+	background: rgba(255, 107, 53, 0.1);
+	border-color: #ff6b35;
+}
+
+.input {
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	color: #ffffff;
+
+	&::placeholder {
+		color: rgba(255, 255, 255, 0.5);
+	}
+
+	&:focus {
+		border-color: #ff6b35;
+		box-shadow: 0 0 0 rem(2) rgba(255, 107, 53, 0.2);
+	}
+}
+
+.inviteInfo {
+	padding: rem(12) rem(16);
+	background: rgba(255, 107, 53, 0.1);
+	border: 1px solid rgba(255, 107, 53, 0.3);
+	border-radius: rem(8);
+	text-align: center;
+
+	p {
+		color: #ff6b35;
+		font-size: rem(14);
+		margin: 0;
+	}
+}
+
+.button {
+	background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+	border: none;
+	color: #ffffff;
+	font-weight: 600;
+	padding: rem(16);
+	border-radius: rem(8);
+	cursor: pointer;
+	transition: all 0.3s ease;
+
+	&:hover:not(:disabled) {
+		transform: translateY(rem(-2));
+		box-shadow: 0 rem(8) rem(24) rgba(255, 107, 53, 0.3);
+	}
+
+	&:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+}
+
+.message {
+	padding: rem(12) rem(16);
+	border-radius: rem(8);
+	margin-top: rem(20);
+	text-align: center;
+	font-size: rem(14);
+	background: rgba(76, 175, 80, 0.1);
+	border: 1px solid rgba(76, 175, 80, 0.3);
+	color: #4caf50;
+}
+
+.error {
+	padding: rem(12) rem(16);
+	border-radius: rem(8);
+	margin-top: rem(20);
+	text-align: center;
+	font-size: rem(14);
+	background: rgba(244, 67, 54, 0.1);
+	border: 1px solid rgba(244, 67, 54, 0.3);
+	color: #f44336;
+}
+
+.links {
+	margin-top: rem(24);
+	text-align: center;
+
+	p {
+		color: rgba(255, 255, 255, 0.7);
+		font-size: rem(14);
+	}
+}
+
+.link {
+	color: #ff6b35;
+	text-decoration: none;
+	font-weight: 500;
+	transition: color 0.3s ease;
+
+	&:hover {
+		color: #f7931e;
+		text-decoration: underline;
+	}
+}

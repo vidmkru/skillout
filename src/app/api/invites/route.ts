@@ -1,144 +1,151 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { generateToken } from '@/shared/auth/utils'
-import type { ApiResponse, Invite, InviteRequest, InviteResponse } from '@/shared/types/database'
+import { InviteType, UserRole } from '@/shared/types/enums'
+import type { Invite } from '@/shared/types/database'
 
 export async function GET(request: NextRequest) {
 	try {
 		// Get current user from headers
 		const userId = request.headers.get('x-user-id')
 		if (!userId) {
-			return NextResponse.json<ApiResponse<null>>({
-				success: false,
-				error: 'Unauthorized'
-			}, { status: 401 })
+			return NextResponse.json(
+				{ error: 'Unauthorized' },
+				{ status: 401 }
+			)
 		}
 
-		// Get user's subscription to determine invite quota
-		const subscription = await db.getSubscription(userId)
 		const user = await db.getUser(userId)
-
 		if (!user) {
-			return NextResponse.json<ApiResponse<null>>({
-				success: false,
-				error: 'User not found'
-			}, { status: 404 })
+			return NextResponse.json(
+				{ error: 'User not found' },
+				{ status: 404 }
+			)
 		}
 
-		// Calculate invite quota based on role and subscription
-		let quota = 0
-		if (user.role === 'admin') {
-			quota = 50
-		} else if (user.role === 'producer') {
-			quota = subscription?.tier === 'producer' ? 10 : 2
-		} else {
-			quota = 2 // Default for creators
-		}
+		// Get user's invite quota and usage
+		const quota = user.inviteQuota
+		const used = user.invitesUsed
 
-		// Get all invites issued by this user
+		// Get user's issued invites
 		const allInvites = await db.getAllInvites()
-		const userInvites = allInvites.filter((invite: Invite) => invite.issuedBy === userId)
+		const userInvites = allInvites.filter(invite => invite.issuedBy === userId)
 
-		return NextResponse.json<ApiResponse<{ quota: number; invites: Invite[] }>>({
-			success: true,
-			data: {
-				quota,
-				invites: userInvites
-			}
+		return NextResponse.json({
+			quota,
+			used,
+			available: {
+				creator: quota.creator - used.creator,
+				creatorPro: quota.creatorPro - used.creatorPro,
+				producer: quota.producer - used.producer
+			},
+			invites: userInvites
 		})
-
 	} catch (error) {
 		console.error('Get invites error:', error)
-		return NextResponse.json<ApiResponse<null>>({
-			success: false,
-			error: 'Internal server error'
-		}, { status: 500 })
+		return NextResponse.json(
+			{ error: 'Failed to fetch invites' },
+			{ status: 500 }
+		)
 	}
 }
 
 export async function POST(request: NextRequest) {
 	try {
-		const body: InviteRequest = await request.json()
-		const { email } = body
+		const body = await request.json()
+		const { inviteType } = body
 
 		// Get current user from headers
 		const userId = request.headers.get('x-user-id')
 		if (!userId) {
-			return NextResponse.json<ApiResponse<null>>({
-				success: false,
-				error: 'Unauthorized'
-			}, { status: 401 })
+			return NextResponse.json(
+				{ error: 'Unauthorized' },
+				{ status: 401 }
+			)
 		}
 
 		const user = await db.getUser(userId)
 		if (!user) {
-			return NextResponse.json<ApiResponse<null>>({
-				success: false,
-				error: 'User not found'
-			}, { status: 404 })
+			return NextResponse.json(
+				{ error: 'User not found' },
+				{ status: 404 }
+			)
 		}
 
-		// Check if user can issue invites
-		if (user.role === 'creator') {
-			return NextResponse.json<ApiResponse<null>>({
-				success: false,
-				error: 'Creators cannot issue invites'
-			}, { status: 403 })
+		// Validate invite type
+		if (!Object.values(InviteType).includes(inviteType)) {
+			return NextResponse.json(
+				{ error: 'Invalid invite type' },
+				{ status: 400 }
+			)
 		}
 
-		// Get user's current invites to check quota
-		const allInvites = await db.getAllInvites()
-		const userInvites = allInvites.filter((invite: Invite) => invite.issuedBy === userId)
-		const usedInvites = userInvites.filter((invite: Invite) => invite.used)
-
-		// Calculate quota
-		const subscription = await db.getSubscription(userId)
-		let quota = 0
-		if (user.role === 'admin') {
-			quota = 50
-		} else if (user.role === 'producer') {
-			quota = subscription?.tier === 'producer' ? 10 : 2
+		// Check if user has quota for this invite type
+		const inviteTypeKey = inviteType as keyof typeof user.inviteQuota
+		if (user.invitesUsed[inviteTypeKey] >= user.inviteQuota[inviteTypeKey]) {
+			return NextResponse.json(
+				{ error: 'No invites available for this type' },
+				{ status: 403 }
+			)
 		}
 
-		if (usedInvites.length >= quota) {
-			return NextResponse.json<ApiResponse<null>>({
-				success: false,
-				error: 'Invite quota exceeded'
-			}, { status: 429 })
+		// Check role permissions
+		const canIssueInvite = (issuerRole: UserRole, targetType: InviteType) => {
+			switch (issuerRole) {
+				case UserRole.Admin:
+					return true // Admin can issue any type
+				case UserRole.CreatorPro:
+					return targetType === InviteType.Creator || targetType === InviteType.Producer
+				case UserRole.Creator:
+					return targetType === InviteType.Creator || targetType === InviteType.Producer
+				case UserRole.Producer:
+					return false // Producers cannot issue invites
+				default:
+					return false
+			}
+		}
+
+		if (!canIssueInvite(user.role, inviteType)) {
+			return NextResponse.json(
+				{ error: 'You cannot issue this type of invite' },
+				{ status: 403 }
+			)
 		}
 
 		// Generate invite code
-		const code = generateToken(8).toUpperCase()
-		const now = new Date()
-		const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days
+		const inviteCode = generateToken(8).toUpperCase()
+		const now = new Date().toISOString()
+		const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
 
 		const invite: Invite = {
-			code,
+			code: inviteCode,
 			issuedBy: userId,
-			issuedTo: email,
+			inviteType,
 			used: false,
-			expiresAt: expiresAt.toISOString(),
-			createdAt: now.toISOString(),
+			expiresAt,
+			createdAt: now
 		}
 
-		await db.setInvite(code, invite)
+		await db.setInvite(inviteCode, invite)
 
-		const response: InviteResponse = {
-			code,
-			expiresAt: expiresAt.toISOString(),
-		}
+		// Update user's invite usage
+		user.invitesUsed[inviteTypeKey]++
+		await db.setUser(userId, user)
 
-		return NextResponse.json<ApiResponse<InviteResponse>>({
+		return NextResponse.json({
 			success: true,
-			message: 'Invite created successfully',
-			data: response
+			invite: {
+				code: inviteCode,
+				type: inviteType,
+				expiresAt,
+				issuedAt: now
+			}
 		})
-
 	} catch (error) {
 		console.error('Create invite error:', error)
-		return NextResponse.json<ApiResponse<null>>({
-			success: false,
-			error: 'Internal server error'
-		}, { status: 500 })
+		return NextResponse.json(
+			{ error: 'Failed to create invite' },
+			{ status: 500 }
+		)
 	}
 }

@@ -1,15 +1,25 @@
-import { ExperienceLevel } from './enums'
+import { ExperienceLevel, UserRole, SubscriptionTier, InviteType } from './enums'
 
 // Base user interface
 export interface User {
 	id: string
 	email: string
-	role: 'creator' | 'producer' | 'admin'
+	role: UserRole
 	createdAt: string
 	updatedAt: string
 	isVerified: boolean
-	subscriptionTier: 'free' | 'producer' | 'creator-pro'
+	subscriptionTier: SubscriptionTier
 	subscriptionExpiresAt?: string
+	inviteQuota: {
+		creator: number
+		creatorPro: number
+		producer: number
+	}
+	invitesUsed: {
+		creator: number
+		creatorPro: number
+		producer: number
+	}
 }
 
 // Session interface
@@ -45,6 +55,7 @@ export interface CreatorProfile {
 		linkedin?: string
 	}
 	isPublic: boolean
+	isPro: boolean // true for creator-pro, false for creator
 	createdAt: string
 	updatedAt: string
 }
@@ -94,6 +105,7 @@ export interface Invite {
 	code: string
 	issuedBy: string
 	issuedTo?: string
+	inviteType: InviteType
 	used: boolean
 	usedAt?: string
 	expiresAt: string
@@ -117,12 +129,41 @@ export interface Rating {
 // Subscription interface
 export interface Subscription {
 	userId: string
-	tier: 'free' | 'producer' | 'creator-pro'
+	tier: SubscriptionTier
 	status: 'active' | 'expired' | 'cancelled'
 	startsAt: string
 	expiresAt: string
 	paymentMethod?: string
 	autoRenew: boolean
+}
+
+// Admin settings interface
+export interface AdminSettings {
+	id: string
+	inviteQuotas: {
+		admin: {
+			creator: number
+			creatorPro: number
+			producer: number
+		}
+		creator: {
+			creator: number
+			creatorPro: number
+			producer: number
+		}
+		creatorPro: {
+			creator: number
+			creatorPro: number
+			producer: number
+		}
+	}
+	paywallSettings: {
+		contactInfo: boolean
+		portfolioDetails: boolean
+		recommendations: boolean
+		achievements: boolean
+	}
+	updatedAt: string
 }
 
 // Database query interfaces

@@ -1,1 +1,1 @@
-export { default as Invites } from './invites'
+export { Invites } from './invites'

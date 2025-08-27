@@ -1,138 +1,228 @@
-"use client"
-import { FC, useEffect, useState } from 'react'
-import classNames from 'classnames'
+'use client'
 
-import { Wrapper, Button, Input, Heading } from '@/ui'
-import { axiosInstance } from '@/shared/api'
-import type { Invite } from '@/shared/types/database'
-
+import { useState, useEffect } from 'react'
+import { Button } from '@/ui/button'
+import { Heading } from '@/ui/heading'
+import { InviteType } from '@/shared/types/enums'
+import { track } from '@/shared/analytics'
 import styles from './invites.module.scss'
 
-const Invites: FC = () => {
-	const [quota, setQuota] = useState(0)
-	const [email, setEmail] = useState('')
-	const [invites, setInvites] = useState<Invite[]>([])
-	const [loading, setLoading] = useState(true)
-	const [sending, setSending] = useState(false)
-	const [error, setError] = useState<string | null>(null)
+interface Invite {
+	code: string
+	inviteType: InviteType
+	used: boolean
+	usedAt?: string
+	expiresAt: string
+	createdAt: string
+	issuedTo?: string
+}
 
-	const fetchInvites = async () => {
-		try {
-			setLoading(true)
-			const response = await axiosInstance.get<{ success: boolean; data: { quota: number; invites: Invite[] } }>('/api/invites')
+interface InviteQuota {
+	creator: number
+	creatorPro: number
+	producer: number
+}
 
-			if (response.data.success && response.data.data) {
-				setQuota(response.data.data.quota)
-				setInvites(response.data.data.invites)
-			} else {
-				setError('Failed to load invites')
-			}
-		} catch (err) {
-			console.error('Error fetching invites:', err)
-			setError('Failed to load invites')
-		} finally {
-			setLoading(false)
-		}
-	}
+interface InvitesData {
+	quota: InviteQuota
+	used: InviteQuota
+	available: InviteQuota
+	invites: Invite[]
+}
 
-	const sendInvite = async () => {
-		if (!email.trim()) return
-
-		try {
-			setSending(true)
-			const response = await axiosInstance.post<{ success: boolean; message: string }>('/api/invites', {
-				email: email.trim()
-			})
-
-			if (response.data.success) {
-				setEmail('')
-				// Refresh invites list
-				await fetchInvites()
-			} else {
-				setError(response.data.message || 'Failed to send invite')
-			}
-		} catch (err: unknown) {
-			console.error('Error sending invite:', err)
-			const errorMessage = err instanceof Error ? err.message : 'Failed to send invite'
-			setError(errorMessage)
-		} finally {
-			setSending(false)
-		}
-	}
+export const Invites: React.FC = () => {
+	const [invitesData, setInvitesData] = useState<InvitesData | null>(null)
+	const [selectedType, setSelectedType] = useState<InviteType>(InviteType.Creator)
+	const [isLoading, setIsLoading] = useState(false)
+	const [message, setMessage] = useState('')
+	const [error, setError] = useState('')
 
 	useEffect(() => {
 		fetchInvites()
 	}, [])
 
-	const canSend = quota > 0 && email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+	const fetchInvites = async () => {
+		try {
+			const response = await fetch('/api/invites')
+			if (response.ok) {
+				const data = await response.json()
+				setInvitesData(data)
+			} else {
+				setError('Не удалось загрузить инвайты')
+			}
+		} catch (error) {
+			setError('Ошибка сети')
+		}
+	}
 
-	if (loading) {
-		return (
-			<section className={classNames(styles.root)}>
-				<Wrapper>
-					<div className={styles.loading}>Загрузка инвайтов...</div>
-				</Wrapper>
-			</section>
-		)
+	const createInvite = async () => {
+		setIsLoading(true)
+		setMessage('')
+		setError('')
+
+		try {
+			const response = await fetch('/api/invites', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					inviteType: selectedType
+				}),
+			})
+
+			const data = await response.json()
+
+			if (response.ok) {
+				setMessage(`Инвайт создан: ${data.invite.code}`)
+				track('invite_issued', { type: selectedType })
+				fetchInvites() // Refresh the list
+			} else {
+				setError(data.error || 'Ошибка при создании инвайта')
+			}
+		} catch (error) {
+			setError('Ошибка сети')
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	const copyToClipboard = (code: string) => {
+		navigator.clipboard.writeText(code)
+		setMessage('Код скопирован в буфер обмена')
+		setTimeout(() => setMessage(''), 2000)
+	}
+
+	if (!invitesData) {
+		return <div className={styles.loading}>Загрузка...</div>
+	}
+
+	const getInviteTypeLabel = (type: InviteType) => {
+		switch (type) {
+			case InviteType.Creator:
+				return 'Креатор'
+			case InviteType.CreatorPro:
+				return 'Креатор Про'
+			case InviteType.Producer:
+				return 'Продюсер'
+			default:
+				return type
+		}
 	}
 
 	return (
-		<section className={classNames(styles.root)}>
-			<Wrapper>
-				<Heading tagName="h2">Инвайты</Heading>
+		<div className={styles.container}>
+			<Heading size="md" tagName="h2" className={styles.title}>
+				Управление инвайтами
+			</Heading>
 
-				{error && (
-					<div className={styles.error}>
-						<p>{error}</p>
-						<Button onClick={() => setError(null)}>Закрыть</Button>
+			<div className={styles.quotaInfo}>
+				<div className={styles.quotaCard}>
+					<h3>Квоты инвайтов</h3>
+					<div className={styles.quotaGrid}>
+						<div className={styles.quotaItem}>
+							<span>Креаторы:</span>
+							<span>{invitesData.used.creator}/{invitesData.quota.creator}</span>
+						</div>
+						<div className={styles.quotaItem}>
+							<span>Креаторы Про:</span>
+							<span>{invitesData.used.creatorPro}/{invitesData.quota.creatorPro}</span>
+						</div>
+						<div className={styles.quotaItem}>
+							<span>Продюсеры:</span>
+							<span>{invitesData.used.producer}/{invitesData.quota.producer}</span>
+						</div>
 					</div>
-				)}
-
-				<div className={styles.row}>
-					<div className={styles.quota}>Доступно: {quota}</div>
 				</div>
+			</div>
 
-				<div className={styles.row}>
-					<Input
-						placeholder="email получателя"
-						value={email}
-						onChange={(e) => setEmail(e.target.value)}
-						onKeyPress={(e) => e.key === 'Enter' && canSend && sendInvite()}
-					/>
+			<div className={styles.createSection}>
+				<Heading size="sm" tagName="h3" className={styles.sectionTitle}>
+					Создать новый инвайт
+				</Heading>
+
+				<div className={styles.createForm}>
+					<div className={styles.typeSelector}>
+						<label>Тип инвайта:</label>
+						<select
+							value={selectedType}
+							onChange={(e) => setSelectedType(e.target.value as InviteType)}
+							className={styles.select}
+						>
+							{Object.values(InviteType).map((type) => (
+								<option key={type} value={type}>
+									{getInviteTypeLabel(type)}
+								</option>
+							))}
+						</select>
+					</div>
+
 					<Button
-						onClick={sendInvite}
-						disabled={!canSend || sending}
+						onClick={createInvite}
+						disabled={isLoading || invitesData.available[selectedType as keyof InviteQuota] <= 0}
+						className={styles.createButton}
 					>
-						{sending ? 'Отправка...' : 'Выдать инвайт'}
+						{isLoading ? 'Создаем...' : 'Создать инвайт'}
 					</Button>
 				</div>
+			</div>
 
-				<div className={styles.list}>
-					{invites.length === 0 ? (
-						<p className={styles.empty}>Инвайты не выдавались</p>
-					) : (
-						invites.map((invite) => (
-							<div key={invite.code} className={styles.inviteItem}>
-								<span className={styles.code}>{invite.code}</span>
-								<span className={styles.arrow}>→</span>
-								<span className={styles.email}>{invite.issuedTo || 'Не указан'}</span>
-								<span className={styles.status}>
-									{invite.used ? (
-										<span className={styles.used}>(использован)</span>
-									) : (
-										<span className={styles.pending}>(ожидает)</span>
+			<div className={styles.invitesList}>
+				<Heading size="sm" tagName="h3" className={styles.sectionTitle}>
+					Ваши инвайты
+				</Heading>
+
+				{invitesData.invites.length === 0 ? (
+					<p className={styles.emptyState}>У вас пока нет инвайтов</p>
+				) : (
+					<div className={styles.invitesGrid}>
+						{invitesData.invites.map((invite) => (
+							<div key={invite.code} className={styles.inviteCard}>
+								<div className={styles.inviteHeader}>
+									<span className={styles.inviteType}>
+										{getInviteTypeLabel(invite.inviteType)}
+									</span>
+									<span className={`${styles.status} ${invite.used ? styles.used : styles.active}`}>
+										{invite.used ? 'Использован' : 'Активен'}
+									</span>
+								</div>
+
+								<div className={styles.inviteCode}>
+									<code>{invite.code}</code>
+									{!invite.used && (
+										<Button
+											onClick={() => copyToClipboard(invite.code)}
+											className={styles.copyButton}
+										>
+											Копировать
+										</Button>
 									)}
-								</span>
-								<span className={styles.date}>
-									{new Date(invite.createdAt).toLocaleDateString()}
-								</span>
+								</div>
+
+								<div className={styles.inviteDetails}>
+									<p>Создан: {new Date(invite.createdAt).toLocaleDateString()}</p>
+									<p>Истекает: {new Date(invite.expiresAt).toLocaleDateString()}</p>
+									{invite.used && invite.issuedTo && (
+										<p>Использован: {invite.issuedTo}</p>
+									)}
+								</div>
 							</div>
-						))
-					)}
+						))}
+					</div>
+				)}
+			</div>
+
+			{message && (
+				<div className={styles.message}>
+					{message}
 				</div>
-			</Wrapper>
-		</section>
+			)}
+
+			{error && (
+				<div className={styles.error}>
+					{error}
+				</div>
+			)}
+		</div>
 	)
 }
-
-export default Invites

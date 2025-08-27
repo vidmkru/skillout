@@ -1,5 +1,5 @@
 import Redis from 'ioredis'
-import type { User, Session, CreatorProfile, Invite, Rating, Subscription } from '../types/database'
+import type { User, Session, CreatorProfile, Invite, Rating, Subscription, AdminSettings } from '../types/database'
 
 // Redis connection configuration
 const redisConfig = process.env.REDIS_URL
@@ -26,6 +26,7 @@ export const KEY_PREFIXES = {
 	INVITE: 'invite:',
 	RATING: 'rating:',
 	SUBSCRIPTION: 'subscription:',
+	ADMIN_SETTINGS: 'admin_settings:',
 } as const
 
 // Utility functions for Redis operations
@@ -130,6 +131,25 @@ export const db = {
 
 	async setSubscription(userId: string, subscriptionData: Subscription): Promise<void> {
 		await redis.set(`${KEY_PREFIXES.SUBSCRIPTION}${userId}`, JSON.stringify(subscriptionData), 'EX', 86400 * 30)
+	},
+
+	// Admin settings operations
+	async getAdminSettings(): Promise<AdminSettings | null> {
+		const data = await redis.get(`${KEY_PREFIXES.ADMIN_SETTINGS}main`)
+		return data ? JSON.parse(data) : null
+	},
+
+	async setAdminSettings(id: string, settingsData: AdminSettings): Promise<void> {
+		await redis.set(`${KEY_PREFIXES.ADMIN_SETTINGS}${id}`, JSON.stringify(settingsData), 'EX', 86400 * 30)
+	},
+
+	// Get all users
+	async getAllUsers(): Promise<User[]> {
+		const keys = await redis.keys(`${KEY_PREFIXES.USER}*`)
+		if (keys.length === 0) return []
+
+		const users = await redis.mget(...keys)
+		return users.map(u => u ? JSON.parse(u) : null).filter(Boolean)
 	},
 }
 
