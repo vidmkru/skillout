@@ -20,9 +20,13 @@ export default function LoginPage() {
 
 		try {
 			await login(email)
-			setMessage('Проверьте вашу почту! Мы отправили вам ссылку для входа.')
+			setMessage('Вход выполнен успешно! Перенаправляем...')
+			// Redirect after successful login
+			setTimeout(() => {
+				window.location.href = '/'
+			}, 1000)
 		} catch (error) {
-			setMessage('Ошибка при отправке ссылки. Попробуйте еще раз.')
+			setMessage('Ошибка входа. Проверьте email или зарегистрируйтесь.')
 		} finally {
 			setIsLoading(false)
 		}
@@ -36,7 +40,7 @@ export default function LoginPage() {
 				</Heading>
 
 				<p className={styles.subtitle}>
-					Введите ваш email для получения ссылки для входа
+					Введите ваш email для входа в систему
 				</p>
 
 				<form onSubmit={handleSubmit} className={styles.formContent}>
@@ -54,7 +58,7 @@ export default function LoginPage() {
 						disabled={isLoading}
 						className={styles.button}
 					>
-						{isLoading ? 'Отправляем...' : 'Получить ссылку'}
+						{isLoading ? 'Входим...' : 'Войти'}
 					</Button>
 				</form>
 

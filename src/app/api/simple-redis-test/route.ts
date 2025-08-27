@@ -1,19 +1,11 @@
-import { NextResponse } from 'next/server'
-import Redis from 'ioredis'
+import { NextRequest, NextResponse } from 'next/server'
+import { redis } from '@/shared/db/redis'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
 	try {
 		console.log('🔍 Simple Redis test...')
-
-		// Create a simple Redis connection
-		const redis = new Redis(process.env.REDIS_URL!, {
-			maxRetriesPerRequest: 1,
-			connectTimeout: 5000,
-			commandTimeout: 3000,
-			tls: {
-				rejectUnauthorized: false
-			}
-		})
 
 		// Test connection
 		console.log('📡 Testing connection...')
@@ -24,7 +16,7 @@ export async function GET() {
 		const testKey = 'test:simple'
 		const testValue = 'Hello Redis!'
 
-		await redis.set(testKey, testValue, 'EX', 60)
+		await redis.set(testKey, testValue, { ex: 60 })
 		console.log('✅ SET successful')
 
 		const retrieved = await redis.get(testKey)
@@ -32,9 +24,6 @@ export async function GET() {
 
 		await redis.del(testKey)
 		console.log('✅ DELETE successful')
-
-		await redis.quit()
-		console.log('✅ Connection closed')
 
 		return NextResponse.json({
 			status: 'success',

@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { redis } from '@/shared/db/redis'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
 	try {

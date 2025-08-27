@@ -1,9 +1,11 @@
-import { NextResponse } from 'next/server'
-import { checkRedisConnection } from '@/shared/db/redis'
+import { NextRequest, NextResponse } from 'next/server'
+import { redis } from '@/shared/db/redis'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
 	try {
-		const redisStatus = await checkRedisConnection()
+		const redisStatus = await redis.ping()
 
 		return NextResponse.json({
 			status: 'ok',
