@@ -18,8 +18,8 @@ export async function GET() {
 		// Test basic operations
 		console.log('📝 Testing SET operation...')
 		const testKey = 'test:debug'
-		const testValue = { 
-			message: 'Redis is working!', 
+		const testValue = {
+			message: 'Redis is working!',
 			timestamp: new Date().toISOString(),
 			env: process.env.NODE_ENV
 		}
@@ -31,8 +31,8 @@ export async function GET() {
 		const retrieved = await redis.get(testKey)
 		console.log('✅ GET result:', retrieved)
 
-		// Test parsing
-		const parsed = retrieved ? JSON.parse(retrieved) : null
+		// Test parsing - Upstash Redis returns data in correct format
+		const parsed = retrieved
 		console.log('✅ Parsed result:', parsed)
 
 		// Clean up
