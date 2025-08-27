@@ -89,8 +89,8 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 								<article key={profile.id} className={styles.card} onClick={() => handleProfileClick(profile.id)}>
 									<div className={styles.avatar}>
 										{profile.avatar ? (
-											<Image 
-												src={profile.avatar} 
+											<Image
+												src={profile.avatar}
 												alt={profile.name}
 												width={80}
 												height={80}

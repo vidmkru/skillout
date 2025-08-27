@@ -80,8 +80,8 @@ const ProfileDetails: FC<ProfileDetailsProps> = ({ className }) => {
 				<div className={styles.header}>
 					<div className={styles.avatar}>
 						{profile.avatar ? (
-							<Image 
-								src={profile.avatar} 
+							<Image
+								src={profile.avatar}
 								alt={profile.name}
 								width={120}
 								height={120}
