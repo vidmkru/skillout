@@ -34,9 +34,9 @@ export default function AdminPage() {
 		try {
 			setIsLoading(true)
 			setError('')
-			
+
 			const response = await axiosInstance.get<{ success: boolean; data: AdminStats }>('/api/admin/stats')
-			
+
 			if (response.data.success) {
 				setStats(response.data.data)
 			} else {

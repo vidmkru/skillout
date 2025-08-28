@@ -20,7 +20,18 @@ export async function GET(request: NextRequest) {
 		// Get user from session
 		let user = null
 		try {
-			user = await db.getUserBySession(sessionToken)
+			try {
+				// Get session first, then user
+				const session = await db.getSession(sessionToken)
+				if (session) {
+					user = await db.getUser(session.userId)
+				}
+			} catch (error) {
+				const session = getFallbackSession(sessionToken)
+				if (session) {
+					user = getFallbackUser(session.userId)
+				}
+			}
 		} catch (error) {
 			const session = getFallbackSession(sessionToken)
 			if (session) {
