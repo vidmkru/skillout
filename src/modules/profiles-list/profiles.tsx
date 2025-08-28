@@ -68,7 +68,7 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 	}
 
 	const handleProfileClick = (id: string) => {
-		// Use profile ID (which is now the same as user ID)
+		// Use profile ID (which is the same as user ID)
 		router.push(`/profile/${id}`)
 	}
 

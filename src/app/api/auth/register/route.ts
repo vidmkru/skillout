@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
-import { UserRole, SubscriptionTier } from '@/shared/types/enums'
-import { getFallbackUserByEmail, setFallbackUser, setFallbackSession, fallbackInvites, updateFallbackInvite } from '@/shared/db/fallback'
-import type { User, Session, ApiResponse } from '@/shared/types/database'
+import { UserRole, SubscriptionTier, ExperienceLevel } from '@/shared/types/enums'
+import { setFallbackUser, setFallbackSession } from '@/shared/db/fallback'
+import type { User, Session, ApiResponse, Invite, CreatorProfile } from '@/shared/types/database'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -10,7 +10,18 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json()
-		const { email, role, inviteCode } = body
+		const {
+			email,
+			role,
+			inviteCode,
+			// Creator-specific fields
+			name,
+			bio,
+			specialization,
+			tools,
+			clients,
+			contacts
+		} = body
 
 		if (!email || !role) {
 			return NextResponse.json<ApiResponse<null>>({
@@ -19,23 +30,22 @@ export async function POST(request: NextRequest) {
 			}, { status: 400 })
 		}
 
-		// Check if invite code is required for creators
-		if ((role === UserRole.Creator || role === UserRole.CreatorPro) && !inviteCode) {
+		// Check if invite code is required for creators (only Creator needs invite, CreatorPro can register freely)
+		if (role === UserRole.Creator && !inviteCode) {
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
-				error: 'Invite code is required for Creator and Creator Pro registration'
+				error: 'Invite code is required for Creator registration'
 			}, { status: 400 })
 		}
 
-		// Validate invite code if provided or required
-		let invite = null
+		// Validate invite code if provided or required (Redis only)
+		let invite: Invite | null = null
 		if (inviteCode) {
 			try {
 				invite = await db.getInviteByCode(inviteCode)
 			} catch (error) {
-				// Fallback to memory storage
-				const invites = Array.from(fallbackInvites.values())
-				invite = invites.find(inv => inv.code === inviteCode) || null
+				console.error('Failed to check invite in Redis:', error)
+				invite = null
 			}
 
 			if (!invite) {
@@ -65,20 +75,21 @@ export async function POST(request: NextRequest) {
 					error: `Invite code is for ${invite.type} role, not ${role}`
 				}, { status: 400 })
 			}
-		} else if (role === UserRole.Creator || role === UserRole.CreatorPro) {
+		} else if (role === UserRole.Creator) {
 			// This should not happen due to the check above, but just in case
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
-				error: 'Invite code is required for Creator and Creator Pro registration'
+				error: 'Invite code is required for Creator registration'
 			}, { status: 400 })
 		}
 
-		// Check if user already exists
+		// Check if user already exists (Redis only)
 		let existingUser = null
 		try {
 			existingUser = await db.getUserByEmail(email)
 		} catch (error) {
-			existingUser = getFallbackUserByEmail(email)
+			console.error('Failed to check user existence in Redis:', error)
+			existingUser = null
 		}
 
 		if (existingUser) {
@@ -118,7 +129,8 @@ export async function POST(request: NextRequest) {
 			subscriptionTier: role === UserRole.CreatorPro ? SubscriptionTier.CreatorPro : SubscriptionTier.Free,
 			inviteQuota: getInitialQuota(role),
 			invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
-			invitesCreated: []
+			invitesCreated: [],
+			quotaLastReset: now
 		}
 
 		// Save user
@@ -128,9 +140,46 @@ export async function POST(request: NextRequest) {
 			setFallbackUser(userId, newUser)
 		}
 
+		// Create profile for creators (Creator and CreatorPro roles)
+		if (role === UserRole.Creator || role === UserRole.CreatorPro) {
+			const creatorProfile: CreatorProfile = {
+				id: userId,
+				userId: userId,
+				name: name || email.split('@')[0], // Use provided name or email prefix
+				bio: bio || 'Креативный специалист',
+				avatar: undefined,
+				specialization: specialization || ['Видеомонтаж'],
+				tools: tools || ['Adobe Premiere Pro'],
+				experience: ExperienceLevel.OneToTwo,
+				clients: clients || [],
+				portfolio: [],
+				achievements: [],
+				rating: 4.5,
+				recommendations: [],
+				badges: [],
+				contacts: contacts || {
+					telegram: '',
+					instagram: '',
+					behance: '',
+					linkedin: ''
+				},
+				isPublic: true,
+				isPro: role === UserRole.CreatorPro,
+				createdAt: now,
+				updatedAt: now
+			}
+
+			try {
+				await db.setProfile(userId, creatorProfile)
+				console.log(`✅ Profile created for creator ${email}`)
+			} catch (error) {
+				console.error(`❌ Failed to create profile for ${email}:`, error)
+			}
+		}
+
 		// Mark invite as used if provided (required for creators)
 		if (invite && inviteCode) {
-			const updatedInvite = {
+			const updatedInvite: Invite = {
 				...invite,
 				status: 'used' as const,
 				usedBy: userId,
@@ -140,8 +189,10 @@ export async function POST(request: NextRequest) {
 
 			try {
 				await db.setInvite(invite.id, updatedInvite)
+				console.log(`✅ Invite ${inviteCode} marked as used by ${email}`)
 			} catch (error) {
-				updateFallbackInvite(invite.id, updatedInvite)
+				console.error(`❌ Failed to mark invite as used:`, error)
+				// Don't use fallback for invites, just log the error
 			}
 		}
 

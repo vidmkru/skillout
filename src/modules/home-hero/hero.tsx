@@ -1,51 +1,73 @@
 "use client"
 import { FC } from 'react'
 import classNames from 'classnames'
+import { useRouter } from 'next/navigation'
 
 import { Wrapper, Button, Heading } from '@/ui'
-import { track } from '@/shared/analytics'
-import { useCountdown } from '@/shared/hooks'
+import { useAuth } from '@/shared/hooks/useAuth'
 
 import styles from './hero.module.scss'
 import { HeroProps } from './hero.types'
 
-const DEFAULT_TARGET = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000)
-
-const Hero: FC<HeroProps> = ({ className, targetDate = DEFAULT_TARGET }) => {
+const Hero: FC<HeroProps> = ({ className }) => {
 	const rootClassName = classNames(styles.root, className)
-	const { formatted, isExpired } = useCountdown({ targetDate })
+	const router = useRouter()
+	const { user } = useAuth()
+
+	const handleGetStarted = () => {
+		if (user) {
+			router.push('/profiles')
+		} else {
+			router.push('/register')
+		}
+	}
 
 	return (
 		<section className={rootClassName}>
 			<Wrapper className={styles.content}>
-				<div>
+				<div className={styles.heroContent}>
 					<Heading tagName="h1" className={styles.title}>
-						SKILOUT HACKATHON
+						SkillOut
 					</Heading>
-					<p className={styles.subtitle}>Хакатон генеративного контента от создателей VidMK</p>
-					<Button className={styles.cta} onClick={() => track('cta_click', { source: 'hero' })}>Записаться</Button>
+					<p className={styles.subtitle}>
+						Платформа для креаторов и продюсеров. Найдите идеального специалиста для вашего проекта или покажите свои навыки миру.
+					</p>
+					<div className={styles.ctaGroup}>
+						<Button
+							className={styles.cta}
+							onClick={handleGetStarted}
+						>
+							{user ? 'Найти креаторов' : 'Начать'}
+						</Button>
+						{!user && (
+							<Button
+								className={styles.secondaryCta}
+								onClick={() => router.push('/login')}
+							>
+								Войти
+							</Button>
+						)}
+					</div>
 				</div>
 
-				<div aria-live="polite" className={styles.timer}>
-					<div className={styles.timerItem}>
-						<div className={styles.time}>{formatted.days}</div>
-						<div className={styles.label}>Дня</div>
+				<div className={styles.features}>
+					<div className={styles.feature}>
+						<div className={styles.featureIcon}>🎬</div>
+						<h3>Видеомонтаж</h3>
+						<p>Профессиональные видеомонтажеры</p>
 					</div>
-					<div className={styles.timerItem}>
-						<div className={styles.time}>{formatted.hours}</div>
-						<div className={styles.label}>Часов</div>
+					<div className={styles.feature}>
+						<div className={styles.featureIcon}>🎨</div>
+						<h3>Дизайн</h3>
+						<p>Креативные дизайнеры</p>
 					</div>
-					<div className={styles.timerItem}>
-						<div className={styles.time}>{formatted.minutes}</div>
-						<div className={styles.label}>Минут</div>
-					</div>
-					<div className={styles.timerItem}>
-						<div className={styles.time}>{formatted.seconds}</div>
-						<div className={styles.label}>Секунд</div>
+					<div className={styles.feature}>
+						<div className={styles.featureIcon}>📱</div>
+						<h3>Анимация</h3>
+						<p>Современная анимация</p>
 					</div>
 				</div>
 			</Wrapper>
-			{isExpired && <span className="visually-hidden">Событие началось</span>}
 		</section>
 	)
 }

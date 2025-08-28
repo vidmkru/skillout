@@ -1,4 +1,4 @@
-import { ExperienceLevel, UserRole, SubscriptionTier } from './enums'
+import { ExperienceLevel, UserRole, SubscriptionTier, InviteType } from './enums'
 
 // Base user interface
 export interface User {
@@ -12,6 +12,7 @@ export interface User {
 	inviteQuota: InviteQuota
 	invitesUsed: InviteUsage
 	invitesCreated: Invite[]
+	quotaLastReset?: string // Дата последнего сброса квоты
 }
 
 // Session interface

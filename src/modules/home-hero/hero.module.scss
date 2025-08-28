@@ -1,68 +1,129 @@
-@use '@styles/func';
 @use '@styles/mixins';
-@use '@styles/variables';
 
 .root {
   position: relative;
-  min-height: func.rem(560);
-  padding: func.rem(120) 0 func.rem(80);
+  min-height: 600px;
+  padding: 120px 0 80px;
   display: flex;
   align-items: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 }
 
 .content {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: func.rem(32);
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+  align-items: center;
+  text-align: center;
+}
 
-  @include mixins.tablet {
-    grid-template-columns: 1fr;
-  }
+.heroContent {
+  max-width: 800px;
 }
 
 .title {
-  font-size: func.rem(48);
+  font-size: clamp(48px, 8vw, 72px);
   line-height: 1.05;
   letter-spacing: 0.02em;
-  margin: 0 0 func.rem(24);
+  margin: 0 0 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
 }
 
 .subtitle {
-  opacity: 0.8;
-  margin-bottom: func.rem(32);
+  font-size: 20px;
+  line-height: 1.6;
+  opacity: 0.9;
+  margin-bottom: 40px;
+  color: #e0e0e0;
+}
+
+.ctaGroup {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  @include mixins.mobile {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 .cta {
   display: inline-flex;
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 600;
   transform: translateZ(0);
-  transition: transform 0.2s ease;
-  &:hover { transform: translateY(-2px); }
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+  }
 }
 
-.timer {
+.secondaryCta {
+  display: inline-flex;
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 600;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: #ffffff;
+
+  &:hover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+  }
+}
+
+.features {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: func.rem(24);
-  align-items: end;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 32px;
+  width: 100%;
+  max-width: 900px;
+
+  @include mixins.mobile {
+    grid-template-columns: 1fr;
+  }
 }
 
-.timerItem {
+.feature {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 32px;
   text-align: center;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-  &:hover { transform: translateY(-2px); opacity: 0.9; }
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
 
-  .label { transition: color 0.2s ease; }
-  &:hover .label { color: var(--color-accent-neon); }
+  &:hover {
+    transform: translateY(-4px);
+    border-color: rgba(102, 126, 234, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 16px 0 8px;
+    color: #ffffff;
+  }
+
+  p {
+    color: #a0a0a0;
+    font-size: 14px;
+    line-height: 1.5;
+  }
 }
 
-.time {
-  font-size: clamp(func.rem(40), 7vw, func.rem(64));
-  font-weight: 800;
-  line-height: 1;
-}
-
-.label {
-  opacity: 0.8;
-  margin-top: func.rem(12);
-  font-size: func.rem(12);
+.featureIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
 }

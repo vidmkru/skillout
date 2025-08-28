@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
-import { UserRole, InviteType } from '@/shared/types/enums'
-import { getFallbackUser, getFallbackSession, fallbackUsers, fallbackInvites, setFallbackInvite, getFallbackInvitesByUser } from '@/shared/db/fallback'
+import { InviteType } from '@/shared/types/enums'
+import { getFallbackUser, getFallbackSession, setFallbackInvite, setFallbackUser } from '@/shared/db/fallback'
 import type { Invite, ApiResponse } from '@/shared/types/database'
+import { checkAndUpdateQuota, canCreateInvite, getTypeKey } from '@/shared/utils/quotaUtils'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -53,13 +54,14 @@ export async function GET(request: NextRequest) {
 			}, { status: 404 })
 		}
 
-		// Get user's invites
+		// Get user's invites from Redis only
 		let userInvites: Invite[] = []
 		try {
 			userInvites = await db.getInvitesByUser(user.id)
+			console.log('🔍 API: User invites loaded from Redis:', userInvites.length)
 		} catch (error) {
-			// Fallback to memory storage
-			userInvites = getFallbackInvitesByUser(user.id)
+			console.error('Failed to load invites from Redis:', error)
+			userInvites = []
 		}
 
 		console.log('🔍 API: User ID:', user.id)
@@ -69,25 +71,30 @@ export async function GET(request: NextRequest) {
 		console.log('🔍 API: User invitesUsed:', user.invitesUsed)
 		console.log('🔍 API: User invitesCreated length:', user.invitesCreated?.length || 0)
 
+		// Check and update quota if needed
+		const updatedUser = checkAndUpdateQuota(user)
+
 		// Calculate remaining quota
 		const remainingQuota = {
-			creator: Math.max(0, user.inviteQuota.creator - user.invitesUsed.creator),
-			creatorPro: Math.max(0, user.inviteQuota.creatorPro - user.invitesUsed.creatorPro),
-			producer: Math.max(0, user.inviteQuota.producer - user.invitesUsed.producer)
+			creator: Math.max(0, updatedUser.inviteQuota.creator - updatedUser.invitesUsed.creator),
+			creatorPro: Math.max(0, updatedUser.inviteQuota.creatorPro - updatedUser.invitesUsed.creatorPro),
+			producer: Math.max(0, updatedUser.inviteQuota.producer - updatedUser.invitesUsed.producer)
 		}
 
 		return NextResponse.json<ApiResponse<{
 			invites: Invite[]
-			quota: typeof user.inviteQuota
-			used: typeof user.invitesUsed
+			quota: typeof updatedUser.inviteQuota
+			used: typeof updatedUser.invitesUsed
 			remaining: typeof remainingQuota
+			nextReset: string
 		}>>({
 			success: true,
 			data: {
 				invites: userInvites,
-				quota: user.inviteQuota,
-				used: user.invitesUsed,
-				remaining: remainingQuota
+				quota: updatedUser.inviteQuota,
+				used: updatedUser.invitesUsed,
+				remaining: remainingQuota,
+				nextReset: updatedUser.quotaLastReset || updatedUser.createdAt
 			}
 		})
 	} catch (error) {
@@ -150,15 +157,11 @@ export async function POST(request: NextRequest) {
 			}, { status: 400 })
 		}
 
-		// Check quota
-		const remainingQuota = {
-			creator: Math.max(0, user.inviteQuota.creator - user.invitesUsed.creator),
-			creatorPro: Math.max(0, user.inviteQuota.creatorPro - user.invitesUsed.creatorPro),
-			producer: Math.max(0, user.inviteQuota.producer - user.invitesUsed.producer)
-		}
+		// Check and update quota if needed
+		const updatedUser = checkAndUpdateQuota(user)
 
-		const quotaKey = type as keyof typeof remainingQuota
-		if (remainingQuota[quotaKey] <= 0) {
+		// Check if user can create this type of invite
+		if (!canCreateInvite(updatedUser, type)) {
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
 				error: `No ${type} invites remaining`
@@ -184,18 +187,24 @@ export async function POST(request: NextRequest) {
 			qrCode: `${baseUrl}/register?code=${inviteCode}&type=${type}`
 		}
 
-		// Save invite
-		setFallbackInvite(inviteId, newInvite)
-		console.log('Invite saved to fallback:', newInvite)
+		// Save invite to Redis and fallback
+		try {
+			await db.setInvite(inviteCode, newInvite)
+			console.log('Invite saved to Redis:', newInvite)
+		} catch (error) {
+			console.error('Failed to save invite to Redis, using fallback:', error)
+			setFallbackInvite(inviteId, newInvite)
+		}
 
 		// Update user's invite usage and add invite to user's created invites
-		const updatedUser = {
-			...user,
+		const typeKey = getTypeKey(type)
+		const finalUpdatedUser = {
+			...updatedUser,
 			invitesUsed: {
-				...user.invitesUsed,
-				[quotaKey]: user.invitesUsed[quotaKey] + 1
+				...updatedUser.invitesUsed,
+				[typeKey]: updatedUser.invitesUsed[typeKey] + 1
 			},
-			invitesCreated: [...(user.invitesCreated || []), newInvite]
+			invitesCreated: [...(updatedUser.invitesCreated || []), newInvite]
 		}
 
 		console.log('🔍 API: Updated user data:', {
@@ -205,10 +214,14 @@ export async function POST(request: NextRequest) {
 			invitesCreated: updatedUser.invitesCreated?.length || 0
 		})
 
-		// Update user in fallback storage
-		const { setFallbackUser } = await import('@/shared/db/fallback')
-		setFallbackUser(user.id, updatedUser)
-		console.log('🔍 API: User updated in fallback storage')
+		// Update user in Redis and fallback storage
+		try {
+			await db.setUser(user.id, finalUpdatedUser)
+			console.log('🔍 API: User updated in Redis')
+		} catch (error) {
+			console.error('Failed to update user in Redis, using fallback:', error)
+			setFallbackUser(user.id, finalUpdatedUser)
+		}
 
 		return NextResponse.json<ApiResponse<{ invite: Invite }>>({
 			success: true,
@@ -236,14 +249,13 @@ export async function PUT(request: NextRequest) {
 			}, { status: 400 })
 		}
 
-		// Find invite by code
+		// Find invite by code (Redis only)
 		let invite: Invite | null = null
 		try {
 			invite = await db.getInviteByCode(code)
 		} catch (error) {
-			// Fallback to memory storage
-			const invites = Array.from(fallbackInvites.values())
-			invite = invites.find(inv => inv.code === code) || null
+			console.error('Failed to get invite from Redis:', error)
+			invite = null
 		}
 
 		if (!invite) {

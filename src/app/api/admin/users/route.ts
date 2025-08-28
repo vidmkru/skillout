@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
-import { UserRole, SubscriptionTier } from '@/shared/types/enums'
-import { getFallbackUser, getFallbackSession, fallbackUsers, setFallbackUser, deleteFallbackUser } from '@/shared/db/fallback'
-import type { User, ApiResponse } from '@/shared/types/database'
+import { UserRole, SubscriptionTier, ExperienceLevel } from '@/shared/types/enums'
+import { getFallbackUser, getFallbackSession } from '@/shared/db/fallback'
+import type { User, CreatorProfile, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,13 +47,13 @@ export async function GET(request: NextRequest) {
 		}
 
 		// Get all users
-		let allUsers = []
+		let allUsers: User[] = []
 		try {
 			allUsers = await db.getAllUsers()
+			console.log('Admin API: Users loaded from Redis:', allUsers.length)
 		} catch (error) {
-			// Fallback to memory storage
-			console.log('🔍 Admin Users API: Using fallback storage...')
-			allUsers = Array.from(fallbackUsers.values())
+			console.error('Failed to load users from Redis:', error)
+			allUsers = []
 		}
 
 		return NextResponse.json<ApiResponse<{ users: User[] }>>({
@@ -119,9 +119,8 @@ export async function POST(request: NextRequest) {
 			}, { status: 400 })
 		}
 
-		// Check if user already exists
-		const existingUsers = Array.from(fallbackUsers.values())
-		const existingUser = existingUsers.find(u => u.email.toLowerCase() === email.toLowerCase())
+		// Check if user already exists in Redis
+		const existingUser = await db.getUserByEmail(email.toLowerCase())
 
 		if (existingUser) {
 			return NextResponse.json<ApiResponse<null>>({
@@ -141,28 +140,58 @@ export async function POST(request: NextRequest) {
 			isVerified: true,
 			subscriptionTier: role === UserRole.CreatorPro ? SubscriptionTier.CreatorPro : SubscriptionTier.Free,
 			inviteQuota: { creator: 0, creatorPro: 0, producer: 0 },
-			invitesUsed: { creator: 0, creatorPro: 0, producer: 0 }
+			invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+			invitesCreated: []
 		}
 
-		// Add user to fallback storage
-		setFallbackUser(newUserId, newUser)
+		// Save user to Redis
+		try {
+			await db.setUser(newUserId, newUser)
+			console.log('Admin API: New user saved to Redis:', newUser.email)
+		} catch (error) {
+			console.error('Failed to save user to Redis:', error)
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Failed to save user to database'
+			}, { status: 500 })
+		}
 
 		// If it's a creator, create profile
 		if (role === UserRole.Creator || role === UserRole.CreatorPro) {
-			const { createCreatorProfile } = await import('@/shared/db/fallback')
-			createCreatorProfile(newUserId, {
-				name: name || 'Новый креатор',
-				bio: bio || 'Описание креатора',
-				specialization: specialization || ['Креатив'],
-				tools: tools || ['Adobe Creative Suite'],
-				clients: clients || ['Клиент'],
+			const now = new Date().toISOString()
+			const creatorProfile: CreatorProfile = {
+				id: newUserId,
+				userId: newUserId,
+				name: name || email.split('@')[0],
+				bio: bio || 'Креативный специалист',
+				avatar: undefined,
+				specialization: specialization || ['Видеомонтаж'],
+				tools: tools || ['Adobe Premiere Pro'],
+				experience: ExperienceLevel.OneToTwo,
+				clients: clients || [],
+				portfolio: [],
+				achievements: [],
+				rating: 4.5,
+				recommendations: [],
+				badges: [],
 				contacts: contacts || {
 					telegram: '',
 					instagram: '',
 					behance: '',
 					linkedin: ''
-				}
-			})
+				},
+				isPublic: true,
+				isPro: role === UserRole.CreatorPro,
+				createdAt: now,
+				updatedAt: now
+			}
+
+			try {
+				await db.setProfile(newUserId, creatorProfile)
+				console.log(`✅ Profile created for creator ${email}`)
+			} catch (error) {
+				console.error(`❌ Failed to create profile for ${email}:`, error)
+			}
 		}
 
 		return NextResponse.json<ApiResponse<{ user: User }>>({
@@ -244,7 +273,17 @@ export async function PUT(request: NextRequest) {
 			updatedAt: new Date().toISOString()
 		}
 
-		setFallbackUser(userId, updatedUser)
+		// Update user in Redis
+		try {
+			await db.setUser(userId, updatedUser)
+			console.log('Admin API: User updated in Redis:', updatedUser.email)
+		} catch (error) {
+			console.error('Failed to update user in Redis:', error)
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Failed to update user in database'
+			}, { status: 500 })
+		}
 
 		return NextResponse.json<ApiResponse<{ user: User }>>({
 			success: true,
@@ -309,8 +348,14 @@ export async function DELETE(request: NextRequest) {
 			}, { status: 400 })
 		}
 
-		// Prevent deleting admin users
-		const userToDelete = getFallbackUser(userId)
+		// Get user from Redis to check if it exists and is not admin
+		let userToDelete = null
+		try {
+			userToDelete = await db.getUser(userId)
+		} catch (error) {
+			console.error('Failed to get user from Redis:', error)
+		}
+
 		if (!userToDelete) {
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
@@ -318,19 +363,19 @@ export async function DELETE(request: NextRequest) {
 			}, { status: 404 })
 		}
 
-		if (userToDelete.role === UserRole.Admin) {
+		// Allow deleting admin users (removed restriction)
+
+		// Delete user from Redis
+		try {
+			await db.deleteUser(userId)
+			console.log('Admin API: User deleted from Redis:', userToDelete.email)
+		} catch (error) {
+			console.error('Failed to delete user from Redis:', error)
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
-				error: 'Cannot delete admin users'
-			}, { status: 400 })
+				error: 'Failed to delete user from database'
+			}, { status: 500 })
 		}
-
-		// Delete user
-		deleteFallbackUser(userId)
-
-		// Also delete profile if exists
-		const { fallbackProfiles } = await import('@/shared/db/fallback')
-		fallbackProfiles.delete(userId)
 
 		return NextResponse.json<ApiResponse<null>>({
 			success: true,

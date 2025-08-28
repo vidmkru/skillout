@@ -48,13 +48,17 @@ export async function POST() {
 				isVerified: true,
 				subscriptionTier: role === UserRole.Producer ? SubscriptionTier.Free : SubscriptionTier.Free,
 				inviteQuota: getInitialQuota(role),
-				invitesUsed: { creator: 0, creatorPro: 0, producer: 0 }
+				invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+				invitesCreated: [],
+				quotaLastReset: now
 			}
 
 			// Try to save to Redis, fallback to memory
 			try {
 				await db.setUser(userId, user)
+				console.log(`Test user ${email} saved to Redis`)
 			} catch (error) {
+				console.error(`Failed to save test user ${email} to Redis, using fallback:`, error)
 				setFallbackUser(userId, user)
 			}
 

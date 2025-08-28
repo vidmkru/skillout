@@ -27,6 +27,19 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 	const [error, setError] = useState<string | null>(null)
 	const [success, setSuccess] = useState<string | null>(null)
 
+	// Additional fields for creators
+	const [name, setName] = useState('')
+	const [bio, setBio] = useState('')
+	const [specialization, setSpecialization] = useState('')
+	const [tools, setTools] = useState('')
+	const [clients, setClients] = useState('')
+	const [contacts, setContacts] = useState({
+		telegram: '',
+		instagram: '',
+		behance: '',
+		linkedin: ''
+	})
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		setLoading(true)
@@ -41,11 +54,38 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 		}
 
 		try {
-			const response = await api.post('/api/auth/register', {
+			const requestData: {
+				email: string
+				role: UserRole
+				inviteCode?: string
+				name?: string
+				bio?: string
+				specialization?: string[]
+				tools?: string[]
+				clients?: string[]
+				contacts?: {
+					telegram: string
+					instagram: string
+					behance: string
+					linkedin: string
+				}
+			} = {
 				email,
 				role,
 				inviteCode: inviteCode || undefined
-			})
+			}
+
+			// Add creator-specific fields if role is Creator or CreatorPro
+			if (role === UserRole.Creator || role === UserRole.CreatorPro) {
+				requestData.name = name
+				requestData.bio = bio
+				requestData.specialization = specialization.split(',').map(s => s.trim()).filter(s => s)
+				requestData.tools = tools.split(',').map(s => s.trim()).filter(s => s)
+				requestData.clients = clients.split(',').map(s => s.trim()).filter(s => s)
+				requestData.contacts = contacts
+			}
+
+			const response = await api.post('/api/auth/register', requestData)
 
 			if (response.data.success) {
 				setSuccess('Регистрация успешна! Перенаправление...')
@@ -55,9 +95,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 			} else {
 				setError(response.data.error || 'Ошибка регистрации')
 			}
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Registration error:', error)
-			setError(error.response?.data?.error || 'Ошибка регистрации')
+			const errorMessage = error && typeof error === 'object' && 'response' in error
+				? (error.response as { data?: { error?: string } })?.data?.error || 'Ошибка регистрации'
+				: 'Ошибка регистрации'
+			setError(errorMessage)
 		} finally {
 			setLoading(false)
 		}
@@ -80,8 +123,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 			} else {
 				setError(response.data.error || 'Неверный код приглашения')
 			}
-		} catch (error: any) {
-			setError(error.response?.data?.error || 'Ошибка проверки кода')
+		} catch (error: unknown) {
+			const errorMessage = error && typeof error === 'object' && 'response' in error
+				? (error.response as { data?: { error?: string } })?.data?.error || 'Ошибка проверки кода'
+				: 'Ошибка проверки кода'
+			setError(errorMessage)
 		}
 	}
 
@@ -134,8 +180,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 							value={inviteCode}
 							onChange={handleInviteCodeChange}
 							className={`${styles.input} ${(role === UserRole.Creator || role === UserRole.CreatorPro) && !inviteCode.trim()
-									? styles.requiredField
-									: ''
+								? styles.requiredField
+								: ''
 								}`}
 							placeholder={
 								role === UserRole.Creator || role === UserRole.CreatorPro
@@ -189,6 +235,131 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 							{role === UserRole.Producer && 'Доступ к поиску креаторов'}
 						</p>
 					</div>
+
+					{/* Additional fields for creators */}
+					{(role === UserRole.Creator || role === UserRole.CreatorPro) && (
+						<>
+							<div className={styles.formGroup}>
+								<label htmlFor="name" className={styles.label}>
+									Имя *
+								</label>
+								<input
+									id="name"
+									type="text"
+									value={name}
+									onChange={(e) => setName(e.target.value)}
+									className={styles.input}
+									placeholder="Ваше имя"
+									required
+								/>
+							</div>
+
+							<div className={styles.formGroup}>
+								<label htmlFor="bio" className={styles.label}>
+									Биография *
+								</label>
+								<textarea
+									id="bio"
+									value={bio}
+									onChange={(e) => setBio(e.target.value)}
+									className={styles.textarea}
+									placeholder="Расскажите о себе и своем опыте"
+									rows={3}
+									required
+								/>
+							</div>
+
+							<div className={styles.formGroup}>
+								<label htmlFor="specialization" className={styles.label}>
+									Специализация *
+								</label>
+								<input
+									id="specialization"
+									type="text"
+									value={specialization}
+									onChange={(e) => setSpecialization(e.target.value)}
+									className={styles.input}
+									placeholder="Видеомонтаж, Цветокоррекция, Анимация"
+									required
+								/>
+								<p className={styles.helpText}>
+									Укажите через запятую ваши специализации
+								</p>
+							</div>
+
+							<div className={styles.formGroup}>
+								<label htmlFor="tools" className={styles.label}>
+									Инструменты *
+								</label>
+								<input
+									id="tools"
+									type="text"
+									value={tools}
+									onChange={(e) => setTools(e.target.value)}
+									className={styles.input}
+									placeholder="Adobe Premiere Pro, After Effects, DaVinci Resolve"
+									required
+								/>
+								<p className={styles.helpText}>
+									Укажите через запятую инструменты, которыми владеете
+								</p>
+							</div>
+
+							<div className={styles.formGroup}>
+								<label htmlFor="clients" className={styles.label}>
+									Клиенты
+								</label>
+								<input
+									id="clients"
+									type="text"
+									value={clients}
+									onChange={(e) => setClients(e.target.value)}
+									className={styles.input}
+									placeholder="Nike, Adidas, Coca-Cola"
+								/>
+								<p className={styles.helpText}>
+									Укажите через запятую известных клиентов (необязательно)
+								</p>
+							</div>
+
+							<div className={styles.formGroup}>
+								<label className={styles.label}>Контакты</label>
+								<div className={styles.contactsGrid}>
+									<input
+										type="text"
+										value={contacts.telegram}
+										onChange={(e) => setContacts(prev => ({ ...prev, telegram: e.target.value }))}
+										className={styles.input}
+										placeholder="Telegram"
+									/>
+									<input
+										type="text"
+										value={contacts.instagram}
+										onChange={(e) => setContacts(prev => ({ ...prev, instagram: e.target.value }))}
+										className={styles.input}
+										placeholder="Instagram"
+									/>
+									<input
+										type="text"
+										value={contacts.behance}
+										onChange={(e) => setContacts(prev => ({ ...prev, behance: e.target.value }))}
+										className={styles.input}
+										placeholder="Behance"
+									/>
+									<input
+										type="text"
+										value={contacts.linkedin}
+										onChange={(e) => setContacts(prev => ({ ...prev, linkedin: e.target.value }))}
+										className={styles.input}
+										placeholder="LinkedIn"
+									/>
+								</div>
+								<p className={styles.helpText}>
+									Укажите ваши социальные сети (необязательно)
+								</p>
+							</div>
+						</>
+					)}
 
 					{error && (
 						<div className={styles.error}>

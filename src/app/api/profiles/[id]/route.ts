@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fallbackProfiles } from '@/shared/db/fallback'
+import { db } from '@/shared/db/redis'
 import type { CreatorProfile, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -10,19 +10,19 @@ export async function GET(
 ) {
 	try {
 		console.log('🔍 Profile API: Request received for ID:', params.id)
-		console.log('🔍 Profile API: Available profile IDs:', Array.from(fallbackProfiles.keys()))
+		console.log('🔍 Profile API: URL:', request.url)
 
-		const profile = fallbackProfiles.get(params.id)
+		const profile = await db.getProfile(params.id)
 
 		if (!profile) {
-			console.log('❌ Profile API: Profile not found')
+			console.log('❌ Profile API: Profile not found for ID:', params.id)
 			return NextResponse.json<ApiResponse<null>>(
 				{ success: false, error: 'Profile not found' },
 				{ status: 404 }
 			)
 		}
 
-		console.log('✅ Profile API: Profile found:', profile.name)
+		console.log('✅ Profile API: Profile found:', profile.name, 'ID:', profile.id)
 
 		return NextResponse.json<ApiResponse<CreatorProfile>>({
 			success: true,
@@ -61,6 +61,7 @@ export async function PUT(
 			}, { status: 401 })
 		}
 
+		// Get existing profile from Redis
 		const existingProfile = await db.getProfile(id)
 
 		if (!existingProfile) {
@@ -85,6 +86,7 @@ export async function PUT(
 			updatedAt: new Date().toISOString()
 		}
 
+		// Save to Redis
 		await db.setProfile(id, updatedProfile)
 
 		return NextResponse.json<ApiResponse<CreatorProfile>>({

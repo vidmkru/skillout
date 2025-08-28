@@ -52,6 +52,10 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 		}
 	})
 
+	useEffect(() => {
+		fetchUsers()
+	}, [])
+
 	// Check admin access
 	if (!user || user.role !== UserRole.Admin) {
 		return (
@@ -105,9 +109,12 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 			} else {
 				setError(response.data.error || 'Ошибка создания пользователя')
 			}
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Create user error:', error)
-			setError(error.response?.data?.error || 'Ошибка создания пользователя')
+			const errorMessage = error && typeof error === 'object' && 'response' in error
+				? (error.response as { data?: { error?: string } })?.data?.error || 'Ошибка создания пользователя'
+				: 'Ошибка создания пользователя'
+			setError(errorMessage)
 		}
 	}
 
@@ -120,9 +127,12 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 			} else {
 				setError(response.data.error || 'Ошибка обновления пользователя')
 			}
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Update user error:', error)
-			setError(error.response?.data?.error || 'Ошибка обновления пользователя')
+			const errorMessage = error && typeof error === 'object' && 'response' in error
+				? (error.response as { data?: { error?: string } })?.data?.error || 'Ошибка обновления пользователя'
+				: 'Ошибка обновления пользователя'
+			setError(errorMessage)
 		}
 	}
 
@@ -136,15 +146,14 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 			} else {
 				setError(response.data.error || 'Ошибка удаления пользователя')
 			}
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Delete user error:', error)
-			setError(error.response?.data?.error || 'Ошибка удаления пользователя')
+			const errorMessage = error && typeof error === 'object' && 'response' in error
+				? (error.response as { data?: { error?: string } })?.data?.error || 'Ошибка удаления пользователя'
+				: 'Ошибка удаления пользователя'
+			setError(errorMessage)
 		}
 	}
-
-	useEffect(() => {
-		fetchUsers()
-	}, [])
 
 	// Filter users
 	const filteredUsers = users.filter(user => {

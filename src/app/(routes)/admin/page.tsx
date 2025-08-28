@@ -42,9 +42,12 @@ export default function AdminPage() {
 			} else {
 				setError('Не удалось загрузить статистику')
 			}
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Fetch admin stats error:', error)
-			setError(error.response?.data?.error || 'Ошибка сети')
+			const errorMessage = error && typeof error === 'object' && 'response' in error
+				? (error.response as { data?: { error?: string } })?.data?.error || 'Ошибка сети'
+				: 'Ошибка сети'
+			setError(errorMessage)
 		} finally {
 			setIsLoading(false)
 		}

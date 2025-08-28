@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
-import { fallbackProfiles } from '@/shared/db/fallback'
+
 import type { CreatorProfile, ApiResponse, PaginatedResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -17,13 +17,18 @@ export async function GET(request: NextRequest) {
 
 		let profiles: CreatorProfile[] = []
 
-		// Always use fallback storage for now (Redis is not working properly)
-		console.log('🔍 Profiles API: Using fallback storage...')
-		const allProfiles = Array.from(fallbackProfiles.values())
-		console.log('🔍 Profiles API: Total profiles in fallback:', allProfiles.length)
+		// Load profiles from Redis only
+		try {
+			console.log('🔍 Profiles API: Loading from Redis...')
+			profiles = await db.getAllProfiles()
+			console.log('🔍 Profiles API: Total profiles in Redis:', profiles.length)
+		} catch (error) {
+			console.error('Failed to load profiles from Redis:', error)
+			profiles = []
+		}
 
 		// Filter only public profiles
-		profiles = allProfiles.filter(profile => profile.isPublic)
+		profiles = profiles.filter(profile => profile.isPublic)
 		console.log('✅ Profiles API: Public profiles count:', profiles.length)
 
 		console.log('🔍 Profiles API: Total profiles before filtering:', profiles.length)

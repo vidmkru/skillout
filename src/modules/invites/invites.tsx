@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { UserRole, InviteType } from '@/shared/types/enums'
 import { axiosInstance as api } from '@/shared/api/instances'
 import type { Invite } from '@/shared/types/database'
+import { formatTimeUntilReset } from '@/shared/utils/quotaUtils'
 import styles from './invites.module.scss'
 
 interface InvitesProps {
@@ -28,6 +30,7 @@ interface InviteData {
 		creatorPro: number
 		producer: number
 	}
+	nextReset: string
 }
 
 interface InvitedUser {
@@ -45,6 +48,61 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 	const [creatingInvite, setCreatingInvite] = useState(false)
 	const [selectedType, setSelectedType] = useState<InviteType>(InviteType.Creator)
 	const [invitedUsers, setInvitedUsers] = useState<Record<string, InvitedUser>>({})
+	const [timeUntilReset, setTimeUntilReset] = useState<string>('')
+
+	const fetchInvites = useCallback(async () => {
+		try {
+			setLoading(true)
+			const response = await api.get('/api/invites')
+			if (response.data.success) {
+				setInviteData(response.data.data)
+
+				// Calculate time until reset
+				if (user) {
+					const userWithReset = { ...user, quotaLastReset: response.data.data.nextReset }
+					const timeUntilResetStr = formatTimeUntilReset(userWithReset)
+					setTimeUntilReset(timeUntilResetStr)
+				}
+
+				// Get information about invited users
+				const usersMap: Record<string, InvitedUser> = {}
+				for (const invite of response.data.data.invites) {
+					if (invite.usedBy && invite.usedEmail) {
+						usersMap[invite.id] = {
+							id: invite.usedBy,
+							email: invite.usedEmail,
+							role: invite.type,
+							createdAt: invite.usedAt || ''
+						}
+					}
+				}
+				setInvitedUsers(usersMap)
+			} else {
+				setError('Ошибка загрузки инвайтов')
+			}
+		} catch (error) {
+			console.error('Fetch invites error:', error)
+			setError('Ошибка загрузки инвайтов')
+		} finally {
+			setLoading(false)
+		}
+	}, [user])
+
+	useEffect(() => {
+		// Prevent any page refresh
+		const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+			e.preventDefault()
+			e.returnValue = ''
+		}
+
+		window.addEventListener('beforeunload', handleBeforeUnload)
+
+		fetchInvites()
+
+		return () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload)
+		}
+	}, [fetchInvites])
 
 	// Check if user can create invites
 	if (!user || (user.role !== UserRole.Creator && user.role !== UserRole.CreatorPro && user.role !== UserRole.Admin)) {
@@ -58,39 +116,17 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 		)
 	}
 
-	const fetchInvites = async () => {
-		try {
-			setLoading(true)
-			console.log('Fetching invites...')
-			const response = await api.get('/api/invites')
-			console.log('Fetch invites response:', response.data)
-			if (response.data.success) {
-				console.log('Invites received from API:', response.data.data.invites); // New log
-				setInviteData(response.data.data)
-
-				// Get information about invited users
-				const usersMap: Record<string, InvitedUser> = {}
-				for (const invite of response.data.data.invites) {
-					if (invite.usedBy && invite.usedEmail) {
-						usersMap[invite.id] = {
-							id: invite.usedBy,
-							email: invite.usedEmail,
-							role: invite.type, // Assuming invite.type is the role
-							createdAt: invite.usedAt || ''
-						}
-					}
-				}
-				console.log('Invited users map:', usersMap)
-				setInvitedUsers(usersMap)
-				console.log('Finished setting invited users map.')
-			} else {
-				setError('Ошибка загрузки инвайтов')
-			}
-		} catch (error) {
-			console.error('Fetch invites error:', error)
-			setError('Ошибка загрузки инвайтов')
-		} finally {
-			setLoading(false)
+	// Helper function to convert InviteType to object key
+	const getTypeKey = (type: InviteType): 'creator' | 'creatorPro' | 'producer' => {
+		switch (type) {
+			case InviteType.Creator:
+				return 'creator'
+			case InviteType.CreatorPro:
+				return 'creatorPro'
+			case InviteType.Producer:
+				return 'producer'
+			default:
+				return 'creator'
 		}
 	}
 
@@ -128,16 +164,17 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 				// Immediately add the new invite to the local state for display
 				setInviteData(prevData => {
 					if (!prevData) return null
+					const typeKey = getTypeKey(type)
 					return {
 						...prevData,
 						invites: [...prevData.invites, newInvite],
 						used: {
 							...prevData.used,
-							[type]: prevData.used[type] + 1
+							[typeKey]: prevData.used[typeKey] + 1
 						},
 						remaining: {
 							...prevData.remaining,
-							[type]: prevData.remaining[type] - 1
+							[typeKey]: prevData.remaining[typeKey] - 1
 						}
 					}
 				})
@@ -147,11 +184,15 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 				console.error('API returned error:', response.data.error)
 				setError(response.data.error || 'Ошибка создания инвайта')
 			}
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Create invite error:', error)
-			console.error('Error response:', error.response?.data)
-			console.error('Error status:', error.response?.status)
-			setError(error.response?.data?.error || 'Ошибка создания инвайта')
+			const errorResponse = error && typeof error === 'object' && 'response' in error
+				? (error.response as { data?: { error?: string; status?: number } })?.data
+				: null
+			console.error('Error response:', errorResponse)
+			console.error('Error status:', errorResponse?.status)
+			const errorMessage = errorResponse?.error || 'Ошибка создания инвайта'
+			setError(errorMessage)
 		} finally {
 			setCreatingInvite(false)
 		}
@@ -237,25 +278,6 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 		return new Date() > new Date(expiresAt)
 	}
 
-	useEffect(() => {
-		console.log('Invites component mounted, fetching invites...')
-
-		// Prevent any page refresh
-		const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-			console.log('⚠️ Page refresh detected in useEffect!', e)
-			e.preventDefault()
-			e.returnValue = ''
-		}
-
-		window.addEventListener('beforeunload', handleBeforeUnload)
-
-		fetchInvites()
-
-		return () => {
-			window.removeEventListener('beforeunload', handleBeforeUnload)
-		}
-	}, [])
-
 	if (loading) {
 		return (
 			<div className={styles.container}>
@@ -289,7 +311,15 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 			)}
 
 			<div className={styles.quotaSection}>
-				<h2>Квоты инвайтов</h2>
+				<div className={styles.quotaHeader}>
+					<h2>Квоты инвайтов</h2>
+					{timeUntilReset && (
+						<div className={styles.resetInfo}>
+							<span className={styles.resetLabel}>Сброс квоты через:</span>
+							<span className={styles.resetTime}>{timeUntilReset}</span>
+						</div>
+					)}
+				</div>
 				<div className={styles.quotaGrid}>
 					<div className={styles.quotaCard}>
 						<div className={styles.quotaType}>Креаторы</div>
@@ -441,14 +471,17 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 									<div className={styles.qrSection}>
 										<label>QR код:</label>
 										<div className={styles.qrContainer}>
-											<img
+											<Image
 												src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(invite.qrCode)}`}
 												alt="QR Code"
+												width={150}
+												height={150}
 												className={styles.qrCode}
 											/>
 											<button
 												className={styles.downloadButton}
 												onClick={() => {
+													if (!invite.qrCode) return
 													const link = document.createElement('a')
 													link.href = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(invite.qrCode)}`
 													link.download = `invite-${invite.code}.png`

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { UserRole, InviteType } from '@/shared/types/enums'
 import { getFallbackUser, getFallbackSession, fallbackUsers, fallbackInvites } from '@/shared/db/fallback'
-import type { ApiResponse } from '@/shared/types/database'
+import type { ApiResponse, User, Invite } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,21 +47,21 @@ export async function GET(request: NextRequest) {
 		}
 
 		// Get all users
-		let allUsers = []
+		let allUsers: User[] = []
 		try {
 			allUsers = await db.getAllUsers()
 		} catch (error) {
 			// Fallback to memory storage
-			allUsers = Array.from(fallbackUsers.values())
+			allUsers = Array.from(fallbackUsers.values()) as User[]
 		}
 
 		// Get all invites
-		let allInvites = []
+		let allInvites: Invite[] = []
 		try {
 			allInvites = await db.getAllInvites()
 		} catch (error) {
 			// Fallback to memory storage
-			allInvites = Array.from(fallbackInvites.values())
+			allInvites = Array.from(fallbackInvites.values()) as Invite[]
 		}
 
 		// Calculate statistics

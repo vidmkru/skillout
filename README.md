@@ -155,4 +155,4 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Visit `/api/test-redis` to test your Redis connection and basic operations.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
