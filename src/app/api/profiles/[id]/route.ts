@@ -1,49 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/shared/db/redis'
-import type { ApiResponse, CreatorProfile } from '@/shared/types/database'
+import { fallbackProfiles } from '@/shared/db/fallback'
+import type { CreatorProfile, ApiResponse } from '@/shared/types/database'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(
 	request: NextRequest,
 	{ params }: { params: { id: string } }
 ) {
 	try {
-		const { id } = params
+		console.log('🔍 Profile API: Request received for ID:', params.id)
+		console.log('🔍 Profile API: Available profile IDs:', Array.from(fallbackProfiles.keys()))
 
-		if (!id) {
-			return NextResponse.json<ApiResponse<null>>({
-				success: false,
-				error: 'Profile ID is required'
-			}, { status: 400 })
-		}
-
-		const profile = await db.getProfile(id)
+		const profile = fallbackProfiles.get(params.id)
 
 		if (!profile) {
-			return NextResponse.json<ApiResponse<null>>({
-				success: false,
-				error: 'Profile not found'
-			}, { status: 404 })
+			console.log('❌ Profile API: Profile not found')
+			return NextResponse.json<ApiResponse<null>>(
+				{ success: false, error: 'Profile not found' },
+				{ status: 404 }
+			)
 		}
 
-		// Check if profile is public
-		if (!profile.isPublic) {
-			return NextResponse.json<ApiResponse<null>>({
-				success: false,
-				error: 'Profile is not public'
-			}, { status: 403 })
-		}
+		console.log('✅ Profile API: Profile found:', profile.name)
 
 		return NextResponse.json<ApiResponse<CreatorProfile>>({
 			success: true,
 			data: profile
 		})
-
 	} catch (error) {
-		console.error('Get profile error:', error)
-		return NextResponse.json<ApiResponse<null>>({
-			success: false,
-			error: 'Internal server error'
-		}, { status: 500 })
+		console.error('❌ Profile API error:', error)
+		return NextResponse.json<ApiResponse<null>>(
+			{ success: false, error: 'Failed to fetch profile' },
+			{ status: 500 }
+		)
 	}
 }
 

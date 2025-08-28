@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
-import { UserRole } from '@/shared/types/enums'
+import { UserRole, InviteType } from '@/shared/types/enums'
 import { getFallbackUser, getFallbackSession, fallbackUsers, fallbackInvites } from '@/shared/db/fallback'
 import type { ApiResponse } from '@/shared/types/database'
 
@@ -76,6 +76,14 @@ export async function GET(request: NextRequest) {
 		const totalInvites = allInvites.length
 		const activeInvites = allInvites.filter(invite => invite.status === 'active').length
 		const usedInvites = allInvites.filter(invite => invite.status === 'used').length
+		const expiredInvites = allInvites.filter(invite => invite.status === 'expired').length
+
+		// Calculate invite usage by type
+		const invitesByType = {
+			creator: allInvites.filter(invite => invite.type === InviteType.Creator).length,
+			creatorPro: allInvites.filter(invite => invite.type === InviteType.CreatorPro).length,
+			producer: allInvites.filter(invite => invite.type === InviteType.Producer).length
+		}
 
 		return NextResponse.json<ApiResponse<{
 			totalUsers: number
@@ -83,6 +91,8 @@ export async function GET(request: NextRequest) {
 			totalInvites: number
 			activeInvites: number
 			usedInvites: number
+			expiredInvites: number
+			invitesByType: typeof invitesByType
 		}>>({
 			success: true,
 			data: {
@@ -90,7 +100,9 @@ export async function GET(request: NextRequest) {
 				usersByRole,
 				totalInvites,
 				activeInvites,
-				usedInvites
+				usedInvites,
+				expiredInvites,
+				invitesByType
 			}
 		})
 	} catch (error) {

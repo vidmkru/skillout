@@ -1,224 +1,190 @@
-@use '@styles/func' as *;
+@use '@styles/func';
+@use '@styles/mixins';
 
 .container {
-	padding: rem(40) 0;
-	max-width: rem(1200);
-	margin: 0 auto;
+	padding: func.rem(40) 0;
 }
 
-.title {
-	color: #ffffff;
-	margin-bottom: rem(40);
+.stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(func.rem(200), 1fr));
+	gap: func.rem(20);
+	margin-bottom: func.rem(40);
+}
+
+.statCard {
+	background: linear-gradient(135deg, var(--color-surface) 0%, rgba(255, 255, 255, 0.02) 100%);
+	border: 1px solid var(--color-accent-outline);
+	border-radius: func.rem(12);
+	padding: func.rem(20);
 	text-align: center;
-	font-size: rem(32);
-	font-weight: 700;
-}
-
-.controls {
-	display: flex;
-	gap: rem(20);
-	margin-bottom: rem(40);
-	flex-wrap: wrap;
-}
-
-.searchSection {
-	flex: 1;
-	min-width: rem(300);
-}
-
-.searchInput {
-	background: rgba(255, 255, 255, 0.1);
-	border: 1px solid rgba(255, 255, 255, 0.2);
-	color: #ffffff;
-	width: 100%;
-
-	&::placeholder {
-		color: rgba(255, 255, 255, 0.5);
-	}
-
-	&:focus {
-		border-color: #ff6b35;
-		box-shadow: 0 0 0 rem(2) rgba(255, 107, 53, 0.2);
-	}
-}
-
-.filterSection {
-	min-width: rem(200);
-}
-
-.roleFilter {
-	background: rgba(255, 255, 255, 0.1);
-	border: 1px solid rgba(255, 255, 255, 0.2);
-	border-radius: rem(8);
-	padding: rem(12) rem(16);
-	color: #ffffff;
-	font-size: rem(14);
-	cursor: pointer;
 	transition: all 0.3s ease;
-	width: 100%;
 
-	&:focus {
-		outline: none;
-		border-color: #ff6b35;
-		box-shadow: 0 0 0 rem(2) rgba(255, 107, 53, 0.2);
+	&:hover {
+		border-color: var(--color-accent-neon);
+		transform: translateY(-2px);
 	}
 
-	option {
-		background: #1a1a1a;
-		color: #ffffff;
+	h3 {
+		font-size: func.rem(14);
+		color: var(--color-text-secondary);
+		margin: 0 0 func.rem(8) 0;
+		font-weight: 500;
+	}
+
+	p {
+		font-size: func.rem(32);
+		font-weight: 700;
+		color: var(--color-accent);
+		margin: 0;
 	}
 }
 
 .usersList {
-	background: rgba(255, 255, 255, 0.05);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	border-radius: rem(16);
-	overflow: hidden;
-	backdrop-filter: blur(10px);
-}
-
-.listHeader {
-	display: grid;
-	grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-	gap: rem(20);
-	padding: rem(20);
-	background: rgba(255, 255, 255, 0.1);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-	font-weight: 600;
-	color: #ffffff;
-	font-size: rem(14);
+	display: flex;
+	flex-direction: column;
+	gap: func.rem(16);
 }
 
 .userCard {
-	display: grid;
-	grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-	gap: rem(20);
-	padding: rem(20);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+	background: linear-gradient(135deg, var(--color-surface) 0%, rgba(255, 255, 255, 0.02) 100%);
+	border: 1px solid var(--color-accent-outline);
+	border-radius: func.rem(12);
+	padding: func.rem(20);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 	transition: all 0.3s ease;
 
 	&:hover {
-		background: rgba(255, 255, 255, 0.05);
-	}
-
-	&:last-child {
-		border-bottom: none;
+		border-color: var(--color-accent-neon);
+		transform: translateY(-2px);
+		box-shadow: 0 func.rem(8) func.rem(24) rgba(0, 0, 0, 0.2);
 	}
 }
 
 .userInfo {
-	display: contents;
+	flex: 1;
 }
 
-.email {
-	color: #ffffff;
-	font-weight: 500;
+.userHeader {
+	display: flex;
+	align-items: center;
+	gap: func.rem(12);
+	margin-bottom: func.rem(12);
+
+	h3 {
+		font-size: func.rem(18);
+		font-weight: 600;
+		color: var(--color-text-primary);
+		margin: 0;
+	}
 }
 
 .role {
+	padding: func.rem(4) func.rem(12);
+	border-radius: func.rem(20);
+	font-size: func.rem(12);
 	font-weight: 600;
-	font-size: rem(14);
+	color: white;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
 }
 
-.date {
-	color: rgba(255, 255, 255, 0.7);
-	font-size: rem(14);
+.userDetails {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(func.rem(150), 1fr));
+	gap: func.rem(8);
+
+	p {
+		font-size: func.rem(14);
+		color: var(--color-text-secondary);
+		margin: 0;
+
+		strong {
+			color: var(--color-text-primary);
+		}
+	}
 }
 
-.status {
-	color: rgba(255, 255, 255, 0.7);
-	font-size: rem(14);
-}
-
-.actions {
+.userActions {
 	display: flex;
-	align-items: center;
+	gap: func.rem(12);
+	flex-shrink: 0;
 }
 
-.roleSelect {
-	background: rgba(255, 255, 255, 0.1);
-	border: 1px solid rgba(255, 255, 255, 0.2);
-	border-radius: rem(6);
-	padding: rem(8) rem(12);
-	color: #ffffff;
-	font-size: rem(12);
+.editButton {
+	background: var(--color-accent);
+	color: white;
+	border: none;
+	border-radius: func.rem(8);
+	padding: func.rem(8) func.rem(16);
+	font-size: func.rem(14);
+	font-weight: 600;
 	cursor: pointer;
-	transition: all 0.3s ease;
-	width: 100%;
+	transition: all 0.2s ease;
 
-	&:focus {
-		outline: none;
-		border-color: #ff6b35;
-		box-shadow: 0 0 0 rem(2) rgba(255, 107, 53, 0.2);
-	}
-
-	option {
-		background: #1a1a1a;
-		color: #ffffff;
+	&:hover {
+		background: var(--color-accent-neon);
+		transform: translateY(-2px);
 	}
 }
 
-.emptyState {
-	text-align: center;
-	color: rgba(255, 255, 255, 0.6);
-	font-size: rem(16);
-	padding: rem(60);
-	background: rgba(255, 255, 255, 0.05);
-	border-radius: rem(12);
-	border: 1px dashed rgba(255, 255, 255, 0.2);
-	margin: rem(20);
+.viewProfileButton {
+	background: transparent;
+	color: var(--color-accent);
+	border: 1px solid var(--color-accent);
+	border-radius: func.rem(8);
+	padding: func.rem(8) func.rem(16);
+	font-size: func.rem(14);
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s ease;
+
+	&:hover {
+		background: var(--color-accent);
+		color: white;
+		transform: translateY(-2px);
+	}
 }
 
 .loading {
 	text-align: center;
-	color: rgba(255, 255, 255, 0.7);
-	font-size: rem(18);
-	padding: rem(60);
+	padding: func.rem(40);
+	color: var(--color-text-secondary);
+	font-size: func.rem(18);
 }
 
 .error {
 	text-align: center;
-	color: #f44336;
-	font-size: rem(16);
-	padding: rem(20);
-	background: rgba(244, 67, 54, 0.1);
-	border: 1px solid rgba(244, 67, 54, 0.3);
-	border-radius: rem(12);
-	margin: rem(20) 0;
+	padding: func.rem(40);
+	color: #ff6b6b;
 }
 
-@media (max-width: 768px) {
-	.listHeader,
+@include mixins.tablet {
 	.userCard {
-		grid-template-columns: 1fr;
-		gap: rem(10);
-	}
-
-	.listHeader {
-		display: none;
-	}
-
-	.userCard {
-		padding: rem(16);
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: rem(8);
-		margin: rem(10);
-	}
-
-	.userInfo {
-		display: flex;
 		flex-direction: column;
-		gap: rem(8);
+		align-items: flex-start;
+		gap: func.rem(16);
 	}
 
-	.email {
-		font-size: rem(16);
-		font-weight: 600;
+	.userActions {
+		width: 100%;
+		justify-content: flex-end;
+	}
+}
+
+@include mixins.tablet-small {
+	.stats {
+		grid-template-columns: 1fr;
 	}
 
-	.role,
-	.date,
-	.status {
-		font-size: rem(14);
+	.userDetails {
+		grid-template-columns: 1fr;
+	}
+
+	.userActions {
+		flex-direction: column;
+		width: 100%;
 	}
 }

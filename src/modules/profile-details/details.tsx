@@ -6,18 +6,22 @@ import { useAtomValue } from 'jotai'
 
 import { Wrapper, Heading, Button } from '@/ui'
 import { axiosInstance } from '@/shared/api'
-import { subscriptionAtom } from '@/shared/atoms/subscriptionAtom'
+import { useAuth } from '@/shared/hooks/useAuth'
 import type { CreatorProfile } from '@/shared/types/database'
+import { UserRole } from '@/shared/types/enums'
 import Image from 'next/image'
 
 import styles from './details.module.scss'
 
-interface ProfileDetailsProps { className?: string }
+interface ProfileDetailsProps {
+	className?: string
+	id?: string
+}
 
 const ProfileDetails: FC<ProfileDetailsProps> = ({ className }) => {
 	const params = useParams()
 	const profileId = params.id as string
-	const subscriptionTier = useAtomValue(subscriptionAtom)
+	const { user } = useAuth()
 
 	const [profile, setProfile] = useState<CreatorProfile | null>(null)
 	const [loading, setLoading] = useState(true)
@@ -49,7 +53,7 @@ const ProfileDetails: FC<ProfileDetailsProps> = ({ className }) => {
 		}
 	}, [profileId, fetchProfile])
 
-	const canViewContacts = subscriptionTier === 'producer' || subscriptionTier === 'creator-pro'
+	const canViewContacts = user?.role === UserRole.Admin
 
 	if (loading) {
 		return (

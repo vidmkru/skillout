@@ -1,415 +1,531 @@
 'use client'
 
-import { FC, useState, useEffect } from 'react'
-import { Wrapper } from '@/ui'
-import { Button } from '@/ui/button'
-import { Input } from '@/ui/input'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/shared/hooks/useAuth'
 import { UserRole } from '@/shared/types/enums'
-import { axiosInstance } from '@/shared/api/instances'
-import classNames from 'classnames'
-
+import { axiosInstance as api } from '@/shared/api/instances'
+import type { User } from '@/shared/types/database'
 import styles from './admin-users.module.scss'
-import { AdminUsersProps } from './admin-users.types'
 
-interface User {
-	id: string
+interface AdminUsersProps {
+	className?: string
+}
+
+interface CreateUserForm {
 	email: string
-	role: string
-	createdAt: string
-	isVerified: boolean
-	subscriptionTier: string
-	inviteQuota: {
-		creator: number
-		creatorPro: number
-		producer: number
-	}
-	invitesUsed: {
-		creator: number
-		creatorPro: number
-		producer: number
+	role: UserRole
+	name: string
+	bio: string
+	specialization: string[]
+	tools: string[]
+	clients: string[]
+	contacts: {
+		telegram: string
+		instagram: string
+		behance: string
+		linkedin: string
 	}
 }
 
-interface UsersResponse {
-	users: User[]
-	pagination: {
-		page: number
-		limit: number
-		total: number
-		totalPages: number
-	}
-	stats: {
-		totalUsers: number
-		usersByRole: {
-			admin: number
-			creator: number
-			creatorPro: number
-			producer: number
-		}
-	}
-}
-
-const AdminUsers: FC<AdminUsersProps> = ({ className }) => {
+export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
+	const { user } = useAuth()
 	const [users, setUsers] = useState<User[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
-	const [stats, setStats] = useState<any>(null)
-	const [pagination, setPagination] = useState<any>(null)
-
-	// Filters
-	const [search, setSearch] = useState('')
-	const [roleFilter, setRoleFilter] = useState('all')
-	const [currentPage, setCurrentPage] = useState(1)
-	const [sortBy, setSortBy] = useState('createdAt')
-	const [sortOrder, setSortOrder] = useState('desc')
-
-	// Create user modal
-	const [showCreateModal, setShowCreateModal] = useState(false)
-	const [newUser, setNewUser] = useState({
+	const [searchTerm, setSearchTerm] = useState('')
+	const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all')
+	const [showCreateForm, setShowCreateForm] = useState(false)
+	const [editingUser, setEditingUser] = useState<User | null>(null)
+	const [createForm, setCreateForm] = useState<CreateUserForm>({
 		email: '',
-		role: 'creator',
-		isVerified: true
+		role: UserRole.Creator,
+		name: '',
+		bio: '',
+		specialization: [''],
+		tools: [''],
+		clients: [''],
+		contacts: {
+			telegram: '',
+			instagram: '',
+			behance: '',
+			linkedin: ''
+		}
 	})
-	const [creating, setCreating] = useState(false)
+
+	// Check admin access
+	if (!user || user.role !== UserRole.Admin) {
+		return (
+			<div className={styles.container}>
+				<div className={styles.error}>
+					<h2>Доступ запрещен</h2>
+					<p>Только администраторы могут просматривать эту страницу.</p>
+				</div>
+			</div>
+		)
+	}
 
 	const fetchUsers = async () => {
 		try {
 			setLoading(true)
-			setError(null)
-
-			const params = new URLSearchParams({
-				page: currentPage.toString(),
-				limit: '20',
-				sortBy,
-				sortOrder
-			})
-
-			if (search) params.append('search', search)
-			if (roleFilter !== 'all') params.append('role', roleFilter)
-
-			const response = await axiosInstance.get<{ success: boolean; data: UsersResponse }>(`/api/admin/users?${params}`)
-
+			const response = await api.get('/api/admin/users')
 			if (response.data.success) {
 				setUsers(response.data.data.users)
-				setPagination(response.data.data.pagination)
-				setStats(response.data.data.stats)
 			} else {
-				setError('Failed to load users')
+				setError('Ошибка загрузки пользователей')
 			}
-		} catch (err) {
-			console.error('Fetch users error:', err)
-			setError('Failed to load users')
+		} catch (error) {
+			console.error('Fetch users error:', error)
+			setError('Ошибка загрузки пользователей')
 		} finally {
 			setLoading(false)
 		}
 	}
 
-	const createUser = async () => {
+	const createUser = async (userData: CreateUserForm) => {
 		try {
-			setCreating(true)
-
-			const response = await axiosInstance.post<{ success: boolean; data: User }>('/api/admin/users', newUser)
-
+			const response = await api.post('/api/admin/users', userData)
 			if (response.data.success) {
-				setShowCreateModal(false)
-				setNewUser({ email: '', role: 'creator', isVerified: true })
-				fetchUsers() // Refresh the list
+				setUsers(prev => [...prev, response.data.data.user])
+				setShowCreateForm(false)
+				setCreateForm({
+					email: '',
+					role: UserRole.Creator,
+					name: '',
+					bio: '',
+					specialization: [''],
+					tools: [''],
+					clients: [''],
+					contacts: {
+						telegram: '',
+						instagram: '',
+						behance: '',
+						linkedin: ''
+					}
+				})
 			} else {
-				setError('Failed to create user')
+				setError(response.data.error || 'Ошибка создания пользователя')
 			}
-		} catch (err: any) {
-			console.error('Create user error:', err)
-			setError(err.response?.data?.error || 'Failed to create user')
-		} finally {
-			setCreating(false)
+		} catch (error: any) {
+			console.error('Create user error:', error)
+			setError(error.response?.data?.error || 'Ошибка создания пользователя')
+		}
+	}
+
+	const updateUser = async (userId: string, updates: Partial<User>) => {
+		try {
+			const response = await api.put('/api/admin/users', { userId, updates })
+			if (response.data.success) {
+				setUsers(prev => prev.map(u => u.id === userId ? response.data.data.user : u))
+				setEditingUser(null)
+			} else {
+				setError(response.data.error || 'Ошибка обновления пользователя')
+			}
+		} catch (error: any) {
+			console.error('Update user error:', error)
+			setError(error.response?.data?.error || 'Ошибка обновления пользователя')
+		}
+	}
+
+	const deleteUser = async (userId: string) => {
+		if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) return
+
+		try {
+			const response = await api.delete(`/api/admin/users?userId=${userId}`)
+			if (response.data.success) {
+				setUsers(prev => prev.filter(u => u.id !== userId))
+			} else {
+				setError(response.data.error || 'Ошибка удаления пользователя')
+			}
+		} catch (error: any) {
+			console.error('Delete user error:', error)
+			setError(error.response?.data?.error || 'Ошибка удаления пользователя')
 		}
 	}
 
 	useEffect(() => {
 		fetchUsers()
-	}, [currentPage, search, roleFilter, sortBy, sortOrder])
+	}, [])
 
-	const getRoleDisplayName = (role: string) => {
+	// Filter users
+	const filteredUsers = users.filter(user => {
+		const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase())
+		const matchesRole = roleFilter === 'all' || user.role === roleFilter
+		return matchesSearch && matchesRole
+	})
+
+	// Get role display info
+	const getRoleInfo = (role: UserRole) => {
 		switch (role) {
-			case 'admin':
-				return 'Администратор'
-			case 'creator-pro':
-				return 'Creator Pro'
-			case 'creator':
-				return 'Creator'
-			case 'producer':
-				return 'Producer'
+			case UserRole.Admin:
+				return { label: 'Администратор', color: '#ff4757', bgColor: '#ffe0e0' }
+			case UserRole.CreatorPro:
+				return { label: 'Креатор Pro', color: '#2ed573', bgColor: '#e0ffe0' }
+			case UserRole.Creator:
+				return { label: 'Креатор', color: '#3742fa', bgColor: '#e0e0ff' }
+			case UserRole.Producer:
+				return { label: 'Продюсер', color: '#ffa502', bgColor: '#fff0e0' }
 			default:
-				return role
+				return { label: 'Неизвестно', color: '#747d8c', bgColor: '#f0f0f0' }
 		}
 	}
 
-	const getRoleColor = (role: string) => {
-		switch (role) {
-			case 'admin':
-				return styles.admin
-			case 'creator-pro':
-				return styles.creatorPro
-			case 'creator':
-				return styles.creator
-			case 'producer':
-				return styles.producer
-			default:
-				return ''
+	const handleCreateSubmit = (e: React.FormEvent) => {
+		e.preventDefault()
+		createUser(createForm)
+	}
+
+	const handleEditSubmit = (e: React.FormEvent) => {
+		e.preventDefault()
+		if (!editingUser) return
+
+		const updates: Partial<User> = {
+			role: editingUser.role,
+			isVerified: editingUser.isVerified
 		}
+		updateUser(editingUser.id, updates)
 	}
 
-	const formatDate = (dateString: string) => {
-		return new Date(dateString).toLocaleDateString('ru-RU', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		})
+	const addArrayItem = (field: keyof CreateUserForm, value: string) => {
+		setCreateForm(prev => ({
+			...prev,
+			[field]: [...(prev[field] as string[]), value]
+		}))
 	}
 
-	const rootClassName = classNames(styles.root, className)
+	const removeArrayItem = (field: keyof CreateUserForm, index: number) => {
+		setCreateForm(prev => ({
+			...prev,
+			[field]: (prev[field] as string[]).filter((_, i) => i !== index)
+		}))
+	}
 
-	if (loading && !users.length) {
+	const updateArrayItem = (field: keyof CreateUserForm, index: number, value: string) => {
+		setCreateForm(prev => ({
+			...prev,
+			[field]: (prev[field] as string[]).map((item, i) => i === index ? value : item)
+		}))
+	}
+
+	if (loading) {
 		return (
-			<div className={rootClassName}>
-				<Wrapper>
-					<div className={styles.loading}>Загрузка пользователей...</div>
-				</Wrapper>
-			</div>
-		)
-	}
-
-	if (error && !users.length) {
-		return (
-			<div className={rootClassName}>
-				<Wrapper>
-					<div className={styles.error}>
-						<div className={styles.errorMessage}>{error}</div>
-						<Button onClick={fetchUsers}>Попробовать снова</Button>
-					</div>
-				</Wrapper>
+			<div className={styles.container}>
+				<div className={styles.loading}>Загрузка пользователей...</div>
 			</div>
 		)
 	}
 
 	return (
-		<div className={rootClassName}>
-			<Wrapper>
-				<div className={styles.header}>
-					<h1 className={styles.title}>Управление пользователями</h1>
-					<Button onClick={() => setShowCreateModal(true)} className={styles.createButton}>
-						+ Добавить пользователя
-					</Button>
+		<div className={`${styles.container} ${className || ''}`}>
+			<div className={styles.header}>
+				<h1>Управление пользователями</h1>
+				<button
+					className={styles.createButton}
+					onClick={() => setShowCreateForm(true)}
+				>
+					+ Создать пользователя
+				</button>
+			</div>
+
+			{error && (
+				<div className={styles.error}>
+					{error}
+					<button onClick={() => setError(null)}>✕</button>
 				</div>
+			)}
 
-				{/* Statistics */}
-				{stats && (
-					<div className={styles.stats}>
-						<div className={styles.statCard}>
-							<div className={styles.statValue}>{stats.totalUsers}</div>
-							<div className={styles.statLabel}>Всего пользователей</div>
-						</div>
-						<div className={styles.statCard}>
-							<div className={styles.statValue}>{stats.usersByRole.admin}</div>
-							<div className={styles.statLabel}>Администраторы</div>
-						</div>
-						<div className={styles.statCard}>
-							<div className={styles.statValue}>{stats.usersByRole.creator + stats.usersByRole.creatorPro}</div>
-							<div className={styles.statLabel}>Креаторы</div>
-						</div>
-						<div className={styles.statCard}>
-							<div className={styles.statValue}>{stats.usersByRole.producer}</div>
-							<div className={styles.statLabel}>Продюсеры</div>
-						</div>
-					</div>
-				)}
-
-				{/* Filters */}
-				<div className={styles.filters}>
-					<div className={styles.searchGroup}>
-						<Input
-							type="text"
-							placeholder="Поиск по email..."
-							value={search}
-							onChange={(e) => setSearch(e.target.value)}
-							className={styles.searchInput}
-						/>
-					</div>
-
-					<div className={styles.filterGroup}>
-						<select
-							value={roleFilter}
-							onChange={(e) => setRoleFilter(e.target.value)}
-							className={styles.select}
-						>
-							<option value="all">Все роли</option>
-							<option value="admin">Администраторы</option>
-							<option value="creator">Creators</option>
-							<option value="creator-pro">Creator Pro</option>
-							<option value="producer">Producers</option>
-						</select>
-
-						<select
-							value={`${sortBy}-${sortOrder}`}
-							onChange={(e) => {
-								const [field, order] = e.target.value.split('-')
-								setSortBy(field)
-								setSortOrder(order)
-							}}
-							className={styles.select}
-						>
-							<option value="createdAt-desc">Дата создания (новые)</option>
-							<option value="createdAt-asc">Дата создания (старые)</option>
-							<option value="email-asc">Email (А-Я)</option>
-							<option value="email-desc">Email (Я-А)</option>
-						</select>
-					</div>
+			<div className={styles.filters}>
+				<div className={styles.searchBox}>
+					<input
+						type="text"
+						placeholder="Поиск по email..."
+						value={searchTerm}
+						onChange={(e) => setSearchTerm(e.target.value)}
+					/>
 				</div>
-
-				{/* Users Table */}
-				<div className={styles.tableContainer}>
-					<table className={styles.table}>
-						<thead>
-							<tr>
-								<th>Email</th>
-								<th>Роль</th>
-								<th>Статус</th>
-								<th>Инвайты</th>
-								<th>Дата регистрации</th>
-							</tr>
-						</thead>
-						<tbody>
-							{users.map((user) => (
-								<tr key={user.id}>
-									<td className={styles.emailCell}>
-										<div className={styles.emailInfo}>
-											<span className={styles.email}>{user.email}</span>
-											{!user.isVerified && (
-												<span className={styles.unverified}>Не подтвержден</span>
-											)}
-										</div>
-									</td>
-									<td>
-										<span className={classNames(styles.role, getRoleColor(user.role))}>
-											{getRoleDisplayName(user.role)}
-										</span>
-									</td>
-									<td>
-										<span className={classNames(styles.status, user.isVerified ? styles.verified : styles.unverified)}>
-											{user.isVerified ? '✓ Подтвержден' : '⏳ Ожидает'}
-										</span>
-									</td>
-									<td>
-										<div className={styles.invitesInfo}>
-											<span className={styles.invitesUsed}>
-												{Object.values(user.invitesUsed).reduce((sum, count) => sum + count, 0)}
-											</span>
-											<span className={styles.invitesTotal}>
-												/ {Object.values(user.inviteQuota).reduce((sum, count) => sum + count, 0)}
-											</span>
-										</div>
-									</td>
-									<td className={styles.dateCell}>
-										{formatDate(user.createdAt)}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
+				<div className={styles.roleFilter}>
+					<select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as UserRole | 'all')}>
+						<option value="all">Все роли</option>
+						<option value={UserRole.Admin}>Администраторы</option>
+						<option value={UserRole.CreatorPro}>Креаторы Pro</option>
+						<option value={UserRole.Creator}>Креаторы</option>
+						<option value={UserRole.Producer}>Продюсеры</option>
+					</select>
 				</div>
+			</div>
 
-				{/* Pagination */}
-				{pagination && pagination.totalPages > 1 && (
-					<div className={styles.pagination}>
-						<Button
-							onClick={() => setCurrentPage(currentPage - 1)}
-							disabled={currentPage === 1}
-							className={styles.paginationButton}
-						>
-							← Назад
-						</Button>
+			<div className={styles.stats}>
+				<div className={styles.statCard}>
+					<div className={styles.statNumber}>{users.length}</div>
+					<div className={styles.statLabel}>Всего пользователей</div>
+				</div>
+				<div className={styles.statCard}>
+					<div className={styles.statNumber}>{users.filter(u => u.role === UserRole.Creator || u.role === UserRole.CreatorPro).length}</div>
+					<div className={styles.statLabel}>Креаторов</div>
+				</div>
+				<div className={styles.statCard}>
+					<div className={styles.statNumber}>{users.filter(u => u.role === UserRole.Producer).length}</div>
+					<div className={styles.statLabel}>Продюсеров</div>
+				</div>
+				<div className={styles.statCard}>
+					<div className={styles.statNumber}>{users.filter(u => u.role === UserRole.Admin).length}</div>
+					<div className={styles.statLabel}>Администраторов</div>
+				</div>
+			</div>
 
-						<div className={styles.pageInfo}>
-							Страница {currentPage} из {pagination.totalPages}
-						</div>
-
-						<Button
-							onClick={() => setCurrentPage(currentPage + 1)}
-							disabled={currentPage === pagination.totalPages}
-							className={styles.paginationButton}
-						>
-							Вперед →
-						</Button>
-					</div>
-				)}
-
-				{/* Create User Modal */}
-				{showCreateModal && (
-					<div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
-						<div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-							<div className={styles.modalHeader}>
-								<h2>Добавить пользователя</h2>
-								<button
-									onClick={() => setShowCreateModal(false)}
-									className={styles.closeButton}
+			<div className={styles.usersList}>
+				{filteredUsers.map(user => (
+					<div key={user.id} className={styles.userCard}>
+						<div className={styles.userInfo}>
+							<div className={styles.userHeader}>
+								<div className={styles.userEmail}>{user.email}</div>
+								<div
+									className={styles.roleBadge}
+									style={{
+										color: getRoleInfo(user.role).color,
+										backgroundColor: getRoleInfo(user.role).bgColor
+									}}
 								>
-									×
+									{getRoleInfo(user.role).label}
+								</div>
+							</div>
+							<div className={styles.userDetails}>
+								<div className={styles.userDetail}>
+									<span className={styles.detailLabel}>ID:</span>
+									<span className={styles.detailValue}>{user.id}</span>
+								</div>
+								<div className={styles.userDetail}>
+									<span className={styles.detailLabel}>Создан:</span>
+									<span className={styles.detailValue}>
+										{new Date(user.createdAt).toLocaleDateString('ru-RU')}
+									</span>
+								</div>
+								<div className={styles.userDetail}>
+									<span className={styles.detailLabel}>Подтвержден:</span>
+									<span className={styles.detailValue}>
+										{user.isVerified ? 'Да' : 'Нет'}
+									</span>
+								</div>
+							</div>
+						</div>
+						<div className={styles.userActions}>
+							<button
+								className={styles.editButton}
+								onClick={() => setEditingUser(user)}
+							>
+								Редактировать
+							</button>
+							<button
+								className={styles.viewProfileButton}
+								onClick={() => window.open(`/profile/${user.id}`, '_blank')}
+							>
+								Профиль
+							</button>
+							{user.role !== UserRole.Admin && (
+								<button
+									className={styles.deleteButton}
+									onClick={() => deleteUser(user.id)}
+								>
+									Удалить
+								</button>
+							)}
+						</div>
+					</div>
+				))}
+			</div>
+
+			{/* Create User Modal */}
+			{showCreateForm && (
+				<div className={styles.modal}>
+					<div className={styles.modalContent}>
+						<div className={styles.modalHeader}>
+							<h2>Создать пользователя</h2>
+							<button onClick={() => setShowCreateForm(false)}>✕</button>
+						</div>
+						<form onSubmit={handleCreateSubmit} className={styles.form}>
+							<div className={styles.formGroup}>
+								<label>Email *</label>
+								<input
+									type="email"
+									required
+									value={createForm.email}
+									onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
+								/>
+							</div>
+							<div className={styles.formGroup}>
+								<label>Роль *</label>
+								<select
+									required
+									value={createForm.role}
+									onChange={(e) => setCreateForm(prev => ({ ...prev, role: e.target.value as UserRole }))}
+								>
+									<option value={UserRole.Creator}>Креатор</option>
+									<option value={UserRole.CreatorPro}>Креатор Pro</option>
+									<option value={UserRole.Producer}>Продюсер</option>
+									<option value={UserRole.Admin}>Администратор</option>
+								</select>
+							</div>
+							{(createForm.role === UserRole.Creator || createForm.role === UserRole.CreatorPro) && (
+								<>
+									<div className={styles.formGroup}>
+										<label>Имя</label>
+										<input
+											type="text"
+											value={createForm.name}
+											onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
+										/>
+									</div>
+									<div className={styles.formGroup}>
+										<label>Биография</label>
+										<textarea
+											value={createForm.bio}
+											onChange={(e) => setCreateForm(prev => ({ ...prev, bio: e.target.value }))}
+										/>
+									</div>
+									<div className={styles.formGroup}>
+										<label>Специализация</label>
+										{createForm.specialization.map((item, index) => (
+											<div key={index} className={styles.arrayInput}>
+												<input
+													type="text"
+													value={item}
+													onChange={(e) => updateArrayItem('specialization', index, e.target.value)}
+												/>
+												<button type="button" onClick={() => removeArrayItem('specialization', index)}>✕</button>
+											</div>
+										))}
+										<button type="button" onClick={() => addArrayItem('specialization', '')}>+ Добавить</button>
+									</div>
+									<div className={styles.formGroup}>
+										<label>Инструменты</label>
+										{createForm.tools.map((item, index) => (
+											<div key={index} className={styles.arrayInput}>
+												<input
+													type="text"
+													value={item}
+													onChange={(e) => updateArrayItem('tools', index, e.target.value)}
+												/>
+												<button type="button" onClick={() => removeArrayItem('tools', index)}>✕</button>
+											</div>
+										))}
+										<button type="button" onClick={() => addArrayItem('tools', '')}>+ Добавить</button>
+									</div>
+									<div className={styles.formGroup}>
+										<label>Клиенты</label>
+										{createForm.clients.map((item, index) => (
+											<div key={index} className={styles.arrayInput}>
+												<input
+													type="text"
+													value={item}
+													onChange={(e) => updateArrayItem('clients', index, e.target.value)}
+												/>
+												<button type="button" onClick={() => removeArrayItem('clients', index)}>✕</button>
+											</div>
+										))}
+										<button type="button" onClick={() => addArrayItem('clients', '')}>+ Добавить</button>
+									</div>
+									<div className={styles.formGroup}>
+										<label>Контакты</label>
+										<div className={styles.contactsGrid}>
+											<input
+												type="text"
+												placeholder="Telegram"
+												value={createForm.contacts.telegram}
+												onChange={(e) => setCreateForm(prev => ({
+													...prev,
+													contacts: { ...prev.contacts, telegram: e.target.value }
+												}))}
+											/>
+											<input
+												type="text"
+												placeholder="Instagram"
+												value={createForm.contacts.instagram}
+												onChange={(e) => setCreateForm(prev => ({
+													...prev,
+													contacts: { ...prev.contacts, instagram: e.target.value }
+												}))}
+											/>
+											<input
+												type="text"
+												placeholder="Behance"
+												value={createForm.contacts.behance}
+												onChange={(e) => setCreateForm(prev => ({
+													...prev,
+													contacts: { ...prev.contacts, behance: e.target.value }
+												}))}
+											/>
+											<input
+												type="text"
+												placeholder="LinkedIn"
+												value={createForm.contacts.linkedin}
+												onChange={(e) => setCreateForm(prev => ({
+													...prev,
+													contacts: { ...prev.contacts, linkedin: e.target.value }
+												}))}
+											/>
+										</div>
+									</div>
+								</>
+							)}
+							<div className={styles.formActions}>
+								<button type="submit" className={styles.submitButton}>
+									Создать пользователя
+								</button>
+								<button type="button" onClick={() => setShowCreateForm(false)}>
+									Отмена
 								</button>
 							</div>
-
-							<div className={styles.modalBody}>
-								<div className={styles.formGroup}>
-									<label>Email</label>
-									<Input
-										type="email"
-										value={newUser.email}
-										onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-										placeholder="user@example.com"
-									/>
-								</div>
-
-								<div className={styles.formGroup}>
-									<label>Роль</label>
-									<select
-										value={newUser.role}
-										onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-										className={styles.select}
-									>
-										<option value="creator">Creator</option>
-										<option value="creator-pro">Creator Pro</option>
-										<option value="producer">Producer</option>
-										<option value="admin">Admin</option>
-									</select>
-								</div>
-
-								<div className={styles.formGroup}>
-									<label>
-										<input
-											type="checkbox"
-											checked={newUser.isVerified}
-											onChange={(e) => setNewUser({ ...newUser, isVerified: e.target.checked })}
-										/>
-										Подтвержден
-									</label>
-								</div>
-							</div>
-
-							<div className={styles.modalFooter}>
-								<Button onClick={() => setShowCreateModal(false)} variant="secondary">
-									Отмена
-								</Button>
-								<Button onClick={createUser} disabled={creating || !newUser.email}>
-									{creating ? 'Создание...' : 'Создать'}
-								</Button>
-							</div>
-						</div>
+						</form>
 					</div>
-				)}
-			</Wrapper>
+				</div>
+			)}
+
+			{/* Edit User Modal */}
+			{editingUser && (
+				<div className={styles.modal}>
+					<div className={styles.modalContent}>
+						<div className={styles.modalHeader}>
+							<h2>Редактировать пользователя</h2>
+							<button onClick={() => setEditingUser(null)}>✕</button>
+						</div>
+						<form onSubmit={handleEditSubmit} className={styles.form}>
+							<div className={styles.formGroup}>
+								<label>Email</label>
+								<input type="email" value={editingUser.email} disabled />
+							</div>
+							<div className={styles.formGroup}>
+								<label>Роль</label>
+								<select
+									value={editingUser.role}
+									onChange={(e) => setEditingUser(prev => prev ? { ...prev, role: e.target.value as UserRole } : null)}
+								>
+									<option value={UserRole.Creator}>Креатор</option>
+									<option value={UserRole.CreatorPro}>Креатор Pro</option>
+									<option value={UserRole.Producer}>Продюсер</option>
+									<option value={UserRole.Admin}>Администратор</option>
+								</select>
+							</div>
+							<div className={styles.formGroup}>
+								<label>
+									<input
+										type="checkbox"
+										checked={editingUser.isVerified}
+										onChange={(e) => setEditingUser(prev => prev ? { ...prev, isVerified: e.target.checked } : null)}
+									/>
+									Подтвержден
+								</label>
+							</div>
+							<div className={styles.formActions}>
+								<button type="submit" className={styles.submitButton}>
+									Сохранить
+								</button>
+								<button type="button" onClick={() => setEditingUser(null)}>
+									Отмена
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			)}
 		</div>
 	)
 }
-
-export default AdminUsers

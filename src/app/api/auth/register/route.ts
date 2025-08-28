@@ -1,130 +1,104 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
-import { generateToken } from '@/shared/auth/utils'
 import { UserRole, SubscriptionTier } from '@/shared/types/enums'
-import { getFallbackUserByEmail, setFallbackUser, getFallbackInviteByCode, updateFallbackInvite } from '@/shared/db/fallback'
-import type { User } from '@/shared/types/database'
+import { getFallbackUserByEmail, setFallbackUser, setFallbackSession, fallbackInvites, updateFallbackInvite } from '@/shared/db/fallback'
+import type { User, Session, ApiResponse } from '@/shared/types/database'
+import crypto from 'crypto'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
 	try {
-		console.log('🔍 Registration attempt started')
-		console.log('📋 Environment check:', {
-			REDIS_URL: process.env.REDIS_URL ? 'SET' : 'NOT SET',
-			NODE_ENV: process.env.NODE_ENV,
-			hasRedisUrl: !!process.env.REDIS_URL
-		})
-
 		const body = await request.json()
 		const { email, role, inviteCode } = body
 
-		console.log('📝 Registration data:', { email, role, inviteCode })
-
-		// Validate email
-		if (!email || !email.includes('@')) {
-			console.log('❌ Invalid email:', email)
-			return NextResponse.json(
-				{ error: 'Valid email is required' },
-				{ status: 400 }
-			)
+		if (!email || !role) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Email and role are required'
+			}, { status: 400 })
 		}
 
-		// Validate role
-		if (!Object.values(UserRole).includes(role)) {
-			console.log('❌ Invalid role:', role)
-			return NextResponse.json(
-				{ error: 'Invalid role' },
-				{ status: 400 }
-			)
+		// Check if invite code is required for creators
+		if ((role === UserRole.Creator || role === UserRole.CreatorPro) && !inviteCode) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Invite code is required for Creator and Creator Pro registration'
+			}, { status: 400 })
 		}
 
-		// Check if user already exists (try Redis first, then fallback)
-		console.log('🔍 Checking if user exists...')
+		// Validate invite code if provided or required
+		let invite = null
+		if (inviteCode) {
+			try {
+				invite = await db.getInviteByCode(inviteCode)
+			} catch (error) {
+				// Fallback to memory storage
+				const invites = Array.from(fallbackInvites.values())
+				invite = invites.find(inv => inv.code === inviteCode) || null
+			}
+
+			if (!invite) {
+				return NextResponse.json<ApiResponse<null>>({
+					success: false,
+					error: 'Invalid invite code'
+				}, { status: 400 })
+			}
+
+			if (invite.status === 'used') {
+				return NextResponse.json<ApiResponse<null>>({
+					success: false,
+					error: 'Invite code has already been used'
+				}, { status: 400 })
+			}
+
+			if (new Date() > new Date(invite.expiresAt)) {
+				return NextResponse.json<ApiResponse<null>>({
+					success: false,
+					error: 'Invite code has expired'
+				}, { status: 400 })
+			}
+
+			if (invite.type !== role) {
+				return NextResponse.json<ApiResponse<null>>({
+					success: false,
+					error: `Invite code is for ${invite.type} role, not ${role}`
+				}, { status: 400 })
+			}
+		} else if (role === UserRole.Creator || role === UserRole.CreatorPro) {
+			// This should not happen due to the check above, but just in case
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Invite code is required for Creator and Creator Pro registration'
+			}, { status: 400 })
+		}
+
+		// Check if user already exists
 		let existingUser = null
-
 		try {
 			existingUser = await db.getUserByEmail(email)
 		} catch (error) {
-			console.log('⚠️ Redis failed, checking fallback storage...')
 			existingUser = getFallbackUserByEmail(email)
 		}
 
 		if (existingUser) {
-			console.log('❌ User already exists:', email)
-			return NextResponse.json(
-				{ error: 'User already exists' },
-				{ status: 409 }
-			)
-		}
-		console.log('✅ User does not exist, proceeding...')
-
-		// Handle invite validation for creators
-		if (role === UserRole.Creator || role === UserRole.CreatorPro) {
-			if (!inviteCode) {
-				console.log('❌ Missing invite code for creator role')
-				return NextResponse.json(
-					{ error: 'Invite code is required for creators' },
-					{ status: 400 }
-				)
-			}
-
-			// Validate invite code
-			console.log('🔍 Validating invite code:', inviteCode)
-			let invite = null
-			try {
-				invite = await db.getInviteByCode(inviteCode)
-			} catch (error) {
-				console.log('⚠️ Redis failed, checking fallback storage...')
-				invite = getFallbackInviteByCode(inviteCode)
-			}
-
-			if (!invite) {
-				console.log('❌ Invalid invite code:', inviteCode)
-				return NextResponse.json(
-					{ error: 'Invalid invite code' },
-					{ status: 400 }
-				)
-			}
-
-			if (invite.status !== 'active') {
-				console.log('❌ Invite is not active:', invite.status)
-				return NextResponse.json(
-					{ error: 'Invite code has expired or already used' },
-					{ status: 400 }
-				)
-			}
-
-			if (invite.createdFor !== role) {
-				console.log('❌ Invite is for different role:', invite.createdFor, 'expected:', role)
-				return NextResponse.json(
-					{ error: 'Invite code is for different role' },
-					{ status: 400 }
-				)
-			}
-
-			// Check if invite is expired
-			if (new Date(invite.expiresAt) < new Date()) {
-				console.log('❌ Invite has expired:', invite.expiresAt)
-				return NextResponse.json(
-					{ error: 'Invite code has expired' },
-					{ status: 400 }
-				)
-			}
-
-			console.log('✅ Invite code is valid')
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'User with this email already exists'
+			}, { status: 409 })
 		}
 
-		// Create user
-		console.log('👤 Creating user...')
-		const userId = generateToken(16)
+		// Create new user
+		const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 		const now = new Date().toISOString()
 
 		// Set initial invite quotas based on role
 		const getInitialQuota = (userRole: UserRole) => {
 			switch (userRole) {
 				case UserRole.Admin:
-					return { creator: 50, creatorPro: 20, producer: 100 }
+					return { creator: 1000, creatorPro: 500, producer: 2000 }
 				case UserRole.CreatorPro:
-					return { creator: 5, creatorPro: 2, producer: 10 }
+					return { creator: 10, creatorPro: 2, producer: 20 }
 				case UserRole.Creator:
 					return { creator: 2, creatorPro: 0, producer: 5 }
 				case UserRole.Producer:
@@ -134,93 +108,77 @@ export async function POST(request: NextRequest) {
 			}
 		}
 
-		const user: User = {
+		const newUser: User = {
 			id: userId,
 			email: email.toLowerCase(),
 			role,
 			createdAt: now,
 			updatedAt: now,
-			isVerified: false,
-			subscriptionTier: role === UserRole.Producer ? SubscriptionTier.Free : SubscriptionTier.Free,
+			isVerified: true,
+			subscriptionTier: role === UserRole.CreatorPro ? SubscriptionTier.CreatorPro : SubscriptionTier.Free,
 			inviteQuota: getInitialQuota(role),
-			invitesUsed: { creator: 0, creatorPro: 0, producer: 0 }
+			invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+			invitesCreated: []
 		}
 
-		// Try to save to Redis, fallback to memory if it fails
-		console.log('💾 Saving user...')
-		let storageType = 'redis'
+		// Save user
 		try {
-			await db.setUser(userId, user)
-			console.log('✅ User saved to Redis successfully')
+			await db.setUser(userId, newUser)
 		} catch (error) {
-			console.log('⚠️ Redis failed, saving to fallback storage...')
-			setFallbackUser(userId, user)
-			storageType = 'fallback'
-			console.log('✅ User saved to fallback storage')
+			setFallbackUser(userId, newUser)
 		}
 
-		// Mark invite as used if it was provided
-		if (inviteCode) {
-			console.log('🔍 Marking invite as used:', inviteCode)
+		// Mark invite as used if provided (required for creators)
+		if (invite && inviteCode) {
+			const updatedInvite = {
+				...invite,
+				status: 'used' as const,
+				usedBy: userId,
+				usedAt: now,
+				usedEmail: email
+			}
+
 			try {
-				const invite = await db.getInviteByCode(inviteCode)
-				if (invite) {
-					invite.status = 'used'
-					invite.usedBy = userId
-					invite.usedAt = now
-					await db.setInvite(invite.id, invite)
-					console.log('✅ Invite marked as used in Redis')
-				}
+				await db.setInvite(invite.id, updatedInvite)
 			} catch (error) {
-				console.log('⚠️ Redis failed, updating fallback invite...')
-				const fallbackInvite = getFallbackInviteByCode(inviteCode)
-				if (fallbackInvite) {
-					updateFallbackInvite(fallbackInvite.id, {
-						status: 'used',
-						usedBy: userId,
-						usedAt: now
-					})
-					console.log('✅ Invite marked as used in fallback')
-				}
+				updateFallbackInvite(invite.id, updatedInvite)
 			}
 		}
 
-		// Create initial subscription
-		console.log('💳 Creating subscription...')
-		const subscription = {
+		// Create session
+		const sessionToken = crypto.randomBytes(32).toString('hex')
+		const session: Session = {
+			id: sessionToken,
 			userId,
-			tier: SubscriptionTier.Free,
-			status: 'active' as const,
-			startsAt: now,
-			expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
-			autoRenew: false
+			createdAt: now,
+			expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
 		}
 
 		try {
-			await db.setSubscription(userId, subscription)
-			console.log('✅ Subscription saved to Redis')
+			await db.setSession(sessionToken, session)
 		} catch (error) {
-			console.log('⚠️ Redis failed, subscription not saved (demo mode)')
+			setFallbackSession(sessionToken, session)
 		}
 
-		console.log('🎉 Registration completed successfully:', { userId, email, role, storageType })
-
-		return NextResponse.json({
+		// Set session cookie
+		const response = NextResponse.json<ApiResponse<{ user: User }>>({
 			success: true,
-			message: 'User registered successfully',
-			user: {
-				id: user.id,
-				email: user.email,
-				role: user.role
-			},
-			storage: storageType
+			data: { user: newUser }
 		})
+
+		response.cookies.set('session', sessionToken, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'lax',
+			maxAge: 24 * 60 * 60 // 24 hours
+		})
+
+		return response
 	} catch (error) {
-		console.error('💥 Registration error:', error)
-		console.error('💥 Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-		return NextResponse.json(
-			{ error: 'Registration failed', details: error instanceof Error ? error.message : 'Unknown error' },
-			{ status: 500 }
-		)
+		console.error('Registration error:', error)
+		return NextResponse.json<ApiResponse<null>>({
+			success: false,
+			error: 'Registration failed'
+		}, { status: 500 })
 	}
 }

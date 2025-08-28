@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { UserRole, SubscriptionTier } from '@/shared/types/enums'
-import { generateToken } from '@/shared/auth/utils'
-import { getFallbackUser, setFallbackUser, getFallbackSession, getFallbackUserByEmail, fallbackUsers } from '@/shared/db/fallback'
+import { getFallbackUser, getFallbackSession, fallbackUsers, setFallbackUser, deleteFallbackUser } from '@/shared/db/fallback'
 import type { User, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
-// GET - List all users with filtering and pagination
+// GET - List all users
 export async function GET(request: NextRequest) {
 	try {
 		const sessionToken = request.cookies.get('session')?.value
@@ -22,7 +21,17 @@ export async function GET(request: NextRequest) {
 		// Get user from session
 		let user = null
 		try {
-			user = await db.getUserBySession(sessionToken)
+			try {
+				const session = await db.getSession(sessionToken)
+				if (session) {
+					user = await db.getUser(session.userId)
+				}
+			} catch (error) {
+				const session = getFallbackSession(sessionToken)
+				if (session) {
+					user = getFallbackUser(session.userId)
+				}
+			}
 		} catch (error) {
 			const session = getFallbackSession(sessionToken)
 			if (session) {
@@ -37,102 +46,22 @@ export async function GET(request: NextRequest) {
 			}, { status: 403 })
 		}
 
-		// Get query parameters
-		const { searchParams } = new URL(request.url)
-		const role = searchParams.get('role')
-		const search = searchParams.get('search')
-		const page = parseInt(searchParams.get('page') || '1')
-		const limit = parseInt(searchParams.get('limit') || '20')
-		const sortBy = searchParams.get('sortBy') || 'createdAt'
-		const sortOrder = searchParams.get('sortOrder') || 'desc'
-
 		// Get all users
-		let allUsers: User[] = []
+		let allUsers = []
 		try {
 			allUsers = await db.getAllUsers()
 		} catch (error) {
 			// Fallback to memory storage
+			console.log('🔍 Admin Users API: Using fallback storage...')
 			allUsers = Array.from(fallbackUsers.values())
 		}
 
-		// Apply filters
-		let filteredUsers = allUsers
-
-		if (role && role !== 'all') {
-			filteredUsers = filteredUsers.filter(u => u.role === role)
-		}
-
-		if (search) {
-			const searchLower = search.toLowerCase()
-			filteredUsers = filteredUsers.filter(u =>
-				u.email.toLowerCase().includes(searchLower)
-			)
-		}
-
-		// Apply sorting
-		filteredUsers.sort((a, b) => {
-			const aValue = a[sortBy as keyof User]
-			const bValue = b[sortBy as keyof User]
-
-			if (typeof aValue === 'string' && typeof bValue === 'string') {
-				return sortOrder === 'asc'
-					? aValue.localeCompare(bValue)
-					: bValue.localeCompare(aValue)
-			}
-
-			if (typeof aValue === 'number' && typeof bValue === 'number') {
-				return sortOrder === 'asc' ? aValue - bValue : bValue - aValue
-			}
-
-			return 0
-		})
-
-		// Apply pagination
-		const startIndex = (page - 1) * limit
-		const endIndex = startIndex + limit
-		const paginatedUsers = filteredUsers.slice(startIndex, endIndex)
-
-		// Calculate statistics
-		const totalUsers = filteredUsers.length
-		const totalPages = Math.ceil(totalUsers / limit)
-		const usersByRole = {
-			admin: allUsers.filter(u => u.role === UserRole.Admin).length,
-			creator: allUsers.filter(u => u.role === UserRole.Creator).length,
-			creatorPro: allUsers.filter(u => u.role === UserRole.CreatorPro).length,
-			producer: allUsers.filter(u => u.role === UserRole.Producer).length
-		}
-
-		return NextResponse.json<ApiResponse<{
-			users: User[]
-			pagination: {
-				page: number
-				limit: number
-				total: number
-				totalPages: number
-			}
-			stats: {
-				totalUsers: number
-				usersByRole: typeof usersByRole
-			}
-		}>>({
+		return NextResponse.json<ApiResponse<{ users: User[] }>>({
 			success: true,
-			data: {
-				users: paginatedUsers,
-				pagination: {
-					page,
-					limit,
-					total: totalUsers,
-					totalPages
-				},
-				stats: {
-					totalUsers: allUsers.length,
-					usersByRole
-				}
-			}
+			data: { users: allUsers }
 		})
-
 	} catch (error) {
-		console.error('Get users error:', error)
+		console.error('Get admin users error:', error)
 		return NextResponse.json<ApiResponse<null>>({
 			success: false,
 			error: 'Failed to fetch users'
@@ -140,7 +69,7 @@ export async function GET(request: NextRequest) {
 	}
 }
 
-// POST - Create user manually
+// POST - Create new user
 export async function POST(request: NextRequest) {
 	try {
 		const sessionToken = request.cookies.get('session')?.value
@@ -155,7 +84,17 @@ export async function POST(request: NextRequest) {
 		// Get user from session
 		let user = null
 		try {
-			user = await db.getUserBySession(sessionToken)
+			try {
+				const session = await db.getSession(sessionToken)
+				if (session) {
+					user = await db.getUser(session.userId)
+				}
+			} catch (error) {
+				const session = getFallbackSession(sessionToken)
+				if (session) {
+					user = getFallbackUser(session.userId)
+				}
+			}
 		} catch (error) {
 			const session = getFallbackSession(sessionToken)
 			if (session) {
@@ -171,7 +110,7 @@ export async function POST(request: NextRequest) {
 		}
 
 		const body = await request.json()
-		const { email, role, isVerified = true } = body
+		const { email, role, name, bio, specialization, tools, clients, contacts } = body
 
 		if (!email || !role) {
 			return NextResponse.json<ApiResponse<null>>({
@@ -181,70 +120,227 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Check if user already exists
-		let existingUser = null
-		try {
-			existingUser = await db.getUserByEmail(email)
-		} catch (error) {
-			existingUser = getFallbackUserByEmail(email)
-		}
+		const existingUsers = Array.from(fallbackUsers.values())
+		const existingUser = existingUsers.find(u => u.email.toLowerCase() === email.toLowerCase())
 
 		if (existingUser) {
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
 				error: 'User with this email already exists'
-			}, { status: 409 })
+			}, { status: 400 })
 		}
 
 		// Create new user
-		const now = new Date().toISOString()
-		const userId = generateToken(16)
-
-		// Set initial invite quotas based on role
-		const getInitialQuota = (userRole: UserRole) => {
-			switch (userRole) {
-				case UserRole.Admin:
-					return { creator: 50, creatorPro: 20, producer: 100 }
-				case UserRole.CreatorPro:
-					return { creator: 5, creatorPro: 2, producer: 10 }
-				case UserRole.Creator:
-					return { creator: 2, creatorPro: 0, producer: 5 }
-				case UserRole.Producer:
-					return { creator: 0, creatorPro: 0, producer: 0 }
-				default:
-					return { creator: 0, creatorPro: 0, producer: 0 }
-			}
-		}
-
+		const newUserId = `user-${Date.now()}`
 		const newUser: User = {
-			id: userId,
-			email: email.toLowerCase(),
+			id: newUserId,
+			email,
 			role,
-			createdAt: now,
-			updatedAt: now,
-			isVerified,
-			subscriptionTier: SubscriptionTier.Free,
-			inviteQuota: getInitialQuota(role),
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+			isVerified: true,
+			subscriptionTier: role === UserRole.CreatorPro ? SubscriptionTier.CreatorPro : SubscriptionTier.Free,
+			inviteQuota: { creator: 0, creatorPro: 0, producer: 0 },
 			invitesUsed: { creator: 0, creatorPro: 0, producer: 0 }
 		}
 
-		// Save user
-		try {
-			await db.setUser(userId, newUser)
-		} catch (error) {
-			setFallbackUser(userId, newUser)
+		// Add user to fallback storage
+		setFallbackUser(newUserId, newUser)
+
+		// If it's a creator, create profile
+		if (role === UserRole.Creator || role === UserRole.CreatorPro) {
+			const { createCreatorProfile } = await import('@/shared/db/fallback')
+			createCreatorProfile(newUserId, {
+				name: name || 'Новый креатор',
+				bio: bio || 'Описание креатора',
+				specialization: specialization || ['Креатив'],
+				tools: tools || ['Adobe Creative Suite'],
+				clients: clients || ['Клиент'],
+				contacts: contacts || {
+					telegram: '',
+					instagram: '',
+					behance: '',
+					linkedin: ''
+				}
+			})
 		}
 
-		return NextResponse.json<ApiResponse<User>>({
+		return NextResponse.json<ApiResponse<{ user: User }>>({
 			success: true,
-			data: newUser,
-			message: 'User created successfully'
+			data: { user: newUser }
 		})
-
 	} catch (error) {
 		console.error('Create user error:', error)
 		return NextResponse.json<ApiResponse<null>>({
 			success: false,
 			error: 'Failed to create user'
+		}, { status: 500 })
+	}
+}
+
+// PUT - Update user
+export async function PUT(request: NextRequest) {
+	try {
+		const sessionToken = request.cookies.get('session')?.value
+
+		if (!sessionToken) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Authentication required'
+			}, { status: 401 })
+		}
+
+		// Get user from session
+		let user = null
+		try {
+			try {
+				const session = await db.getSession(sessionToken)
+				if (session) {
+					user = await db.getUser(session.userId)
+				}
+			} catch (error) {
+				const session = getFallbackSession(sessionToken)
+				if (session) {
+					user = getFallbackUser(session.userId)
+				}
+			}
+		} catch (error) {
+			const session = getFallbackSession(sessionToken)
+			if (session) {
+				user = getFallbackUser(session.userId)
+			}
+		}
+
+		if (!user || user.role !== UserRole.Admin) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Admin access required'
+			}, { status: 403 })
+		}
+
+		const body = await request.json()
+		const { userId, updates } = body
+
+		if (!userId || !updates) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'User ID and updates are required'
+			}, { status: 400 })
+		}
+
+		// Get existing user
+		const existingUser = getFallbackUser(userId)
+		if (!existingUser) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'User not found'
+			}, { status: 404 })
+		}
+
+		// Update user
+		const updatedUser: User = {
+			...existingUser,
+			...updates,
+			updatedAt: new Date().toISOString()
+		}
+
+		setFallbackUser(userId, updatedUser)
+
+		return NextResponse.json<ApiResponse<{ user: User }>>({
+			success: true,
+			data: { user: updatedUser }
+		})
+	} catch (error) {
+		console.error('Update user error:', error)
+		return NextResponse.json<ApiResponse<null>>({
+			success: false,
+			error: 'Failed to update user'
+		}, { status: 500 })
+	}
+}
+
+// DELETE - Delete user
+export async function DELETE(request: NextRequest) {
+	try {
+		const sessionToken = request.cookies.get('session')?.value
+
+		if (!sessionToken) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Authentication required'
+			}, { status: 401 })
+		}
+
+		// Get user from session
+		let user = null
+		try {
+			try {
+				const session = await db.getSession(sessionToken)
+				if (session) {
+					user = await db.getUser(session.userId)
+				}
+			} catch (error) {
+				const session = getFallbackSession(sessionToken)
+				if (session) {
+					user = getFallbackUser(session.userId)
+				}
+			}
+		} catch (error) {
+			const session = getFallbackSession(sessionToken)
+			if (session) {
+				user = getFallbackUser(session.userId)
+			}
+		}
+
+		if (!user || user.role !== UserRole.Admin) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Admin access required'
+			}, { status: 403 })
+		}
+
+		const { searchParams } = new URL(request.url)
+		const userId = searchParams.get('userId')
+
+		if (!userId) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'User ID is required'
+			}, { status: 400 })
+		}
+
+		// Prevent deleting admin users
+		const userToDelete = getFallbackUser(userId)
+		if (!userToDelete) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'User not found'
+			}, { status: 404 })
+		}
+
+		if (userToDelete.role === UserRole.Admin) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				error: 'Cannot delete admin users'
+			}, { status: 400 })
+		}
+
+		// Delete user
+		deleteFallbackUser(userId)
+
+		// Also delete profile if exists
+		const { fallbackProfiles } = await import('@/shared/db/fallback')
+		fallbackProfiles.delete(userId)
+
+		return NextResponse.json<ApiResponse<null>>({
+			success: true,
+			data: null
+		})
+	} catch (error) {
+		console.error('Delete user error:', error)
+		return NextResponse.json<ApiResponse<null>>({
+			success: false,
+			error: 'Failed to delete user'
 		}, { status: 500 })
 	}
 }

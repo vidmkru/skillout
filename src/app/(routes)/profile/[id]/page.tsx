@@ -1,5 +1,9 @@
 import { ProfileDetails } from '@modules/profile-details'
 
-export default function ProfilePage() {
-	return <ProfileDetails />
+interface ProfilePageProps {
+	params: { id: string }
+}
+
+export default function ProfilePage({ params }: ProfilePageProps) {
+	return <ProfileDetails id={params.id} />
 }

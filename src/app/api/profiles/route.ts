@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
-import type { CreatorProfile } from '@/shared/types/database'
+import { fallbackProfiles } from '@/shared/db/fallback'
+import type { CreatorProfile, ApiResponse, PaginatedResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
 	try {
+		console.log('🔍 Profiles API: Request received')
+
 		const { searchParams } = new URL(request.url)
 		const page = parseInt(searchParams.get('page') || '1')
 		const limit = parseInt(searchParams.get('limit') || '10')
@@ -14,13 +17,16 @@ export async function GET(request: NextRequest) {
 
 		let profiles: CreatorProfile[] = []
 
-		// Try to get profiles from Redis
-		try {
-			profiles = await db.getAllProfiles()
-		} catch (error) {
-			console.error('Failed to get profiles from Redis:', error)
-			profiles = []
-		}
+		// Always use fallback storage for now (Redis is not working properly)
+		console.log('🔍 Profiles API: Using fallback storage...')
+		const allProfiles = Array.from(fallbackProfiles.values())
+		console.log('🔍 Profiles API: Total profiles in fallback:', allProfiles.length)
+
+		// Filter only public profiles
+		profiles = allProfiles.filter(profile => profile.isPublic)
+		console.log('✅ Profiles API: Public profiles count:', profiles.length)
+
+		console.log('🔍 Profiles API: Total profiles before filtering:', profiles.length)
 
 		// Apply filters
 		const filteredProfiles = profiles.filter((profile: CreatorProfile) => {
@@ -34,25 +40,34 @@ export async function GET(request: NextRequest) {
 			return matchesSearch && matchesSpecialization
 		})
 
+		console.log('🔍 Profiles API: Profiles after filtering:', filteredProfiles.length)
+
 		// Apply pagination
 		const startIndex = (page - 1) * limit
 		const endIndex = startIndex + limit
 		const paginatedProfiles = filteredProfiles.slice(startIndex, endIndex)
 
-		return NextResponse.json({
-			profiles: paginatedProfiles,
-			pagination: {
-				page,
-				limit,
-				total: filteredProfiles.length,
-				totalPages: Math.ceil(filteredProfiles.length / limit)
-			},
-			dataSource: profiles.length > 0 ? 'redis' : 'none'
+		console.log('🔍 Profiles API: Paginated profiles:', paginatedProfiles.length)
+
+		const paginatedResponse: PaginatedResponse<CreatorProfile> = {
+			items: paginatedProfiles,
+			page,
+			limit,
+			total: filteredProfiles.length,
+			totalPages: Math.ceil(filteredProfiles.length / limit)
+		}
+
+		console.log('✅ Profiles API: Returning response with', paginatedProfiles.length, 'profiles')
+		console.log('🔍 Profiles API: Full response data:', JSON.stringify(paginatedResponse, null, 2))
+
+		return NextResponse.json<ApiResponse<PaginatedResponse<CreatorProfile>>>({
+			success: true,
+			data: paginatedResponse
 		})
 	} catch (error) {
-		console.error('Profiles API error:', error)
-		return NextResponse.json(
-			{ error: 'Failed to fetch profiles' },
+		console.error('❌ Profiles API error:', error)
+		return NextResponse.json<ApiResponse<null>>(
+			{ success: false, error: 'Failed to fetch profiles' },
 			{ status: 500 }
 		)
 	}

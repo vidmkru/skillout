@@ -9,17 +9,9 @@ export interface User {
 	updatedAt: string
 	isVerified: boolean
 	subscriptionTier: SubscriptionTier
-	subscriptionExpiresAt?: string
-	inviteQuota: {
-		creator: number
-		creatorPro: number
-		producer: number
-	}
-	invitesUsed: {
-		creator: number
-		creatorPro: number
-		producer: number
-	}
+	inviteQuota: InviteQuota
+	invitesUsed: InviteUsage
+	invitesCreated: Invite[]
 }
 
 // Session interface
@@ -104,13 +96,27 @@ export interface Badge {
 export interface Invite {
 	id: string
 	code: string
-	createdBy: string // userId who created the invite
-	createdFor: 'creator' | 'creatorPro' | 'producer' // role this invite is for
-	status: 'active' | 'used' | 'expired'
-	usedBy?: string // userId who used the invite
-	usedAt?: string
+	type: InviteType
+	createdBy: string
 	createdAt: string
 	expiresAt: string
+	status: 'active' | 'used' | 'expired'
+	usedBy?: string
+	usedAt?: string
+	usedEmail?: string
+	qrCode?: string
+}
+
+export interface InviteQuota {
+	creator: number
+	creatorPro: number
+	producer: number
+}
+
+export interface InviteUsage {
+	creator: number
+	creatorPro: number
+	producer: number
 }
 
 // Rating interface
