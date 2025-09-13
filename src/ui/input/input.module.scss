@@ -14,6 +14,8 @@
   outline: none;
   transition: variables.$transition;
   transition-property: border-color, background-color;
+  box-sizing: border-box;
+  max-width: 100%;
 
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button {
@@ -29,5 +31,21 @@
     height: func.rem(50);
     padding: func.rem(15) func.rem(20);
     border-radius: func.rem(8);
+    font-size: func.rem(16); // Prevent zoom on iOS
+  }
+
+  // Mobile styles
+  @media (max-width: 480px) {
+    height: func.rem(48);
+    padding: func.rem(12) func.rem(16);
+    font-size: func.rem(16); // Prevent zoom on iOS
+    border-radius: func.rem(6);
+  }
+
+  // Very small screens
+  @media (max-width: 360px) {
+    height: func.rem(44);
+    padding: func.rem(10) func.rem(14);
+    font-size: func.rem(15);
   }
 }

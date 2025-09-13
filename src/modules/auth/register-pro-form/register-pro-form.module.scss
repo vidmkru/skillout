@@ -5,6 +5,8 @@
 	justify-content: center;
 	padding: 20px;
 	background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+	box-sizing: border-box;
+	overflow-x: hidden;
 }
 
 .header {
@@ -38,6 +40,7 @@
 	width: 100%;
 	max-width: 500px;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+	box-sizing: border-box;
 }
 
 .form {
@@ -67,6 +70,8 @@
 	font-size: 1rem;
 	transition: all 0.3s ease;
 	backdrop-filter: blur(10px);
+	width: 100%;
+	box-sizing: border-box;
 
 	&:focus {
 		outline: none;
@@ -91,6 +96,8 @@
 	backdrop-filter: blur(10px);
 	resize: vertical;
 	min-height: 80px;
+	width: 100%;
+	box-sizing: border-box;
 
 	&:focus {
 		outline: none;
@@ -175,5 +182,109 @@
 
 	&:hover {
 		color: #764ba2;
+	}
+}
+
+// Tablet styles
+@media (max-width: 768px) {
+	.container {
+		padding: 16px;
+	}
+
+	.formWrapper {
+		padding: 32px 24px;
+		max-width: 100%;
+	}
+
+	.title {
+		font-size: 2rem;
+	}
+
+	.subtitle {
+		font-size: 14px;
+		margin-bottom: 24px;
+	}
+
+	.input,
+	.textarea {
+		padding: 0.875rem 1.25rem;
+		font-size: 16px; // Prevent zoom on iOS
+	}
+
+	.form {
+		gap: 16px;
+	}
+}
+
+// Mobile styles
+@media (max-width: 480px) {
+	.container {
+		padding: 12px;
+		align-items: flex-start;
+		padding-top: 20px;
+	}
+
+	.formWrapper {
+		padding: 24px 16px;
+		border-radius: 12px;
+	}
+
+	.title {
+		font-size: 1.75rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.subtitle {
+		font-size: 13px;
+		margin-bottom: 20px;
+	}
+
+	.input,
+	.textarea {
+		padding: 0.75rem 1rem;
+		font-size: 16px; // Prevent zoom on iOS
+		border-radius: 8px;
+	}
+
+	.form {
+		gap: 14px;
+	}
+
+	.formGroup {
+		gap: 0.4rem;
+	}
+
+	.label {
+		font-size: 0.9rem;
+	}
+
+	.submitButton {
+		padding: 14px;
+		font-size: 0.95rem;
+	}
+
+	.contactsGrid {
+		grid-template-columns: 1fr;
+		gap: 8px;
+	}
+}
+
+// Very small screens
+@media (max-width: 360px) {
+	.container {
+		padding: 8px;
+	}
+
+	.formWrapper {
+		padding: 20px 12px;
+	}
+
+	.title {
+		font-size: 1.5rem;
+	}
+
+	.input,
+	.textarea {
+		padding: 0.7rem 0.9rem;
 	}
 }
