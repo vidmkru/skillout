@@ -12,6 +12,34 @@ interface RegisterFormProps {
 	inviteType?: string
 }
 
+// Skills and programs options
+const SKILLS_OPTIONS = [
+	'AI-креатор',
+	'Режиссер',
+	'Видеомонтаж',
+	'Оператор',
+	'Сценарист',
+	'Колорист',
+	'Звукорежиссер'
+]
+
+const PROGRAMS_OPTIONS = [
+	'VEO',
+	'Midjourney',
+	'Runway',
+	'Sora',
+	'Pika Labs',
+	'Genmo',
+	'Stable Diffusion'
+]
+
+const AI_EXPERIENCE_OPTIONS = [
+	'меньше года',
+	'1-2 года',
+	'2-5 лет',
+	'больше 5 лет'
+]
+
 export const RegisterForm: React.FC<RegisterFormProps> = ({
 	className,
 	inviteCode: initialInviteCode,
@@ -27,18 +55,56 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 	const [error, setError] = useState<string | null>(null)
 	const [success, setSuccess] = useState<string | null>(null)
 
-	// Additional fields for creators
+	// Creator fields
 	const [name, setName] = useState('')
+	const [city, setCity] = useState('')
+	const [photo, setPhoto] = useState<File | null>(null)
 	const [bio, setBio] = useState('')
-	const [specialization, setSpecialization] = useState('')
-	const [tools, setTools] = useState('')
-	const [clients, setClients] = useState('')
-	const [contacts, setContacts] = useState({
+	const [skills, setSkills] = useState<string[]>([])
+	const [programs, setPrograms] = useState<string[]>([])
+	const [aiExperience, setAiExperience] = useState('')
+	const [projects, setProjects] = useState('')
+	const [hackathonParticipation, setHackathonParticipation] = useState(false)
+	const [portfolio, setPortfolio] = useState<File | null>(null)
+	const [achievements, setAchievements] = useState('')
+	const [creatorContacts, setCreatorContacts] = useState({
 		telegram: '',
-		instagram: '',
-		behance: '',
-		linkedin: ''
+		vk: '',
+		kinopoisk: '',
+		vimeo: '',
+		youtube: ''
 	})
+	const [userAgreement, setUserAgreement] = useState(false)
+	const [showInHub, setShowInHub] = useState(false)
+
+	// Producer fields
+	const [producerName, setProducerName] = useState('')
+	const [company, setCompany] = useState('')
+	const [description, setDescription] = useState('')
+	const [producerCity, setProducerCity] = useState('')
+	const [website, setWebsite] = useState('')
+	const [producerContacts, setProducerContacts] = useState({
+		email: '',
+		phone: '',
+		socials: ''
+	})
+
+	// Helper functions for skills and programs
+	const toggleSkill = (skill: string) => {
+		setSkills(prev =>
+			prev.includes(skill)
+				? prev.filter(s => s !== skill)
+				: [...prev, skill]
+		)
+	}
+
+	const toggleProgram = (program: string) => {
+		setPrograms(prev =>
+			prev.includes(program)
+				? prev.filter(p => p !== program)
+				: [...prev, program]
+		)
+	}
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
@@ -46,43 +112,114 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 		setError(null)
 		setSuccess(null)
 
-		// Validate invite code requirement for creators
-		if ((role === UserRole.Creator || role === UserRole.CreatorPro) && !inviteCode.trim()) {
-			setError('Код приглашения обязателен для регистрации креаторов и креаторов Pro')
+		// Validate invite code requirement for creators only
+		if (role === UserRole.Creator && !inviteCode.trim()) {
+			setError('Код приглашения обязателен для регистрации креаторов')
 			setLoading(false)
 			return
 		}
 
+		// Validate creator-specific fields
+		if (role === UserRole.Creator) {
+			if (!name.trim()) {
+				setError('Имя Фамилия обязательны')
+				setLoading(false)
+				return
+			}
+			if (!photo) {
+				setError('Фото обязательно')
+				setLoading(false)
+				return
+			}
+			if (!bio.trim()) {
+				setError('Биография обязательна')
+				setLoading(false)
+				return
+			}
+			if (skills.length === 0) {
+				setError('Выберите хотя бы один навык')
+				setLoading(false)
+				return
+			}
+			if (programs.length === 0) {
+				setError('Выберите хотя бы одну программу')
+				setLoading(false)
+				return
+			}
+			if (!aiExperience) {
+				setError('Укажите опыт работы с ИИ')
+				setLoading(false)
+				return
+			}
+			if (!portfolio) {
+				setError('Загрузите портфолио')
+				setLoading(false)
+				return
+			}
+			if (!creatorContacts.telegram.trim()) {
+				setError('Telegram обязателен')
+				setLoading(false)
+				return
+			}
+			if (!userAgreement) {
+				setError('Необходимо согласие с пользовательским соглашением')
+				setLoading(false)
+				return
+			}
+		}
+
+		// Validate producer and production-specific fields
+		if (role === UserRole.Producer || role === UserRole.CreatorPro) {
+			if (!producerName.trim()) {
+				setError('Имя Фамилия продюсера обязательны')
+				setLoading(false)
+				return
+			}
+			if (!company.trim()) {
+				setError('Название компании обязательно')
+				setLoading(false)
+				return
+			}
+			if (!producerContacts.phone.trim()) {
+				setError('Номер телефона обязателен')
+				setLoading(false)
+				return
+			}
+		}
+
 		try {
-			const requestData: {
-				email: string
-				role: UserRole
-				inviteCode?: string
-				name?: string
-				bio?: string
-				specialization?: string[]
-				tools?: string[]
-				clients?: string[]
-				contacts?: {
-					telegram: string
-					instagram: string
-					behance: string
-					linkedin: string
-				}
-			} = {
+			const requestData: Record<string, unknown> = {
 				email,
 				role,
 				inviteCode: inviteCode || undefined
 			}
 
-			// Add creator-specific fields if role is Creator or CreatorPro
-			if (role === UserRole.Creator || role === UserRole.CreatorPro) {
+			// Add creator-specific fields if role is Creator
+			if (role === UserRole.Creator) {
 				requestData.name = name
+				requestData.city = city
+				requestData.photo = photo
 				requestData.bio = bio
-				requestData.specialization = specialization.split(',').map(s => s.trim()).filter(s => s)
-				requestData.tools = tools.split(',').map(s => s.trim()).filter(s => s)
-				requestData.clients = clients.split(',').map(s => s.trim()).filter(s => s)
-				requestData.contacts = contacts
+				requestData.skills = skills
+				requestData.programs = programs
+				requestData.aiExperience = aiExperience
+				requestData.projects = projects
+				requestData.hackathonParticipation = hackathonParticipation
+				requestData.portfolio = portfolio
+				requestData.achievements = achievements
+				requestData.contacts = creatorContacts
+				requestData.userAgreement = userAgreement
+				requestData.showInHub = showInHub
+			}
+
+			// Add producer and production-specific fields
+			if (role === UserRole.Producer || role === UserRole.CreatorPro) {
+				requestData.name = producerName
+				requestData.company = company
+				requestData.description = description
+				requestData.city = producerCity
+				requestData.website = website
+				requestData.contacts = producerContacts
 			}
 
 			const response = await api.post('/api/auth/register', requestData)
@@ -108,8 +245,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
 	const validateInviteCode = async (code: string) => {
 		if (!code) {
-			if (role === UserRole.Creator || role === UserRole.CreatorPro) {
-				setError('Код приглашения обязателен для креаторов и креаторов Pro')
+			if (role === UserRole.Creator) {
+				setError('Код приглашения обязателен для креаторов')
 			}
 			return
 		}
@@ -138,8 +275,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 		if (code.length >= 8) {
 			validateInviteCode(code)
 		} else {
-			if (code.length === 0 && (role === UserRole.Creator || role === UserRole.CreatorPro)) {
-				setError('Код приглашения обязателен для креаторов и креаторов Pro')
+			if (code.length === 0 && role === UserRole.Creator) {
+				setError('Код приглашения обязателен для креаторов')
 			} else {
 				setError(null)
 			}
@@ -155,6 +292,64 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 				</p>
 
 				<form onSubmit={handleSubmit} className={styles.form}>
+					{/* Role Selection - moved to top */}
+					<div className={styles.formGroup}>
+						<label className={styles.label}>
+							Выберите вашу роль *
+						</label>
+						<div className={styles.roleButtons}>
+							<button
+								type="button"
+								onClick={() => {
+									const newRole = UserRole.Creator
+									setRole(newRole)
+									// Show error if no invite code for creators
+									if (!inviteCode.trim()) {
+										setError('Код приглашения обязателен для креаторов')
+									}
+								}}
+								className={`${styles.roleButton} ${role === UserRole.Creator ? styles.roleButtonActive : ''}`}
+							>
+								<div className={styles.roleButtonContent}>
+									<div className={styles.roleButtonTitle}>Креатор</div>
+									<div className={styles.roleButtonDescription}>Базовый доступ к платформе</div>
+								</div>
+							</button>
+
+							<button
+								type="button"
+								onClick={() => {
+									const newRole = UserRole.CreatorPro
+									setRole(newRole)
+									// Clear error when switching to Production role (no invite required)
+									setError(null)
+								}}
+								className={`${styles.roleButton} ${role === UserRole.CreatorPro ? styles.roleButtonActive : ''}`}
+							>
+								<div className={styles.roleButtonContent}>
+									<div className={styles.roleButtonTitle}>Продакшн</div>
+									<div className={styles.roleButtonDescription}>Расширенные возможности и приоритет</div>
+								</div>
+							</button>
+
+							<button
+								type="button"
+								onClick={() => {
+									const newRole = UserRole.Producer
+									setRole(newRole)
+									// Clear error when switching to Producer role (no invite required)
+									setError(null)
+								}}
+								className={`${styles.roleButton} ${role === UserRole.Producer ? styles.roleButtonActive : ''}`}
+							>
+								<div className={styles.roleButtonContent}>
+									<div className={styles.roleButtonTitle}>Продюсер</div>
+									<div className={styles.roleButtonDescription}>Доступ к поиску креаторов</div>
+								</div>
+							</button>
+						</div>
+					</div>
+					{/* Email field */}
 					<div className={styles.formGroup}>
 						<label htmlFor="email" className={styles.label}>
 							Email *
@@ -170,78 +365,46 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 						/>
 					</div>
 
+					{/* Invite Code field */}
 					<div className={styles.formGroup}>
 						<label htmlFor="inviteCode" className={styles.label}>
-							Код приглашения {(role === UserRole.Creator || role === UserRole.CreatorPro) && '*'}
+							Код приглашения {role === UserRole.Creator && '*'}
 						</label>
 						<input
 							id="inviteCode"
 							type="text"
 							value={inviteCode}
 							onChange={handleInviteCodeChange}
-							className={`${styles.input} ${(role === UserRole.Creator || role === UserRole.CreatorPro) && !inviteCode.trim()
+							className={`${styles.input} ${role === UserRole.Creator && !inviteCode.trim()
 								? styles.requiredField
 								: ''
 								}`}
 							placeholder={
-								role === UserRole.Creator || role === UserRole.CreatorPro
+								role === UserRole.Creator
 									? "Введите код приглашения (обязательно)"
 									: "Введите код приглашения (если есть)"
 							}
-							required={role === UserRole.Creator || role === UserRole.CreatorPro}
+							required={role === UserRole.Creator}
 						/>
-						{(role === UserRole.Creator || role === UserRole.CreatorPro) && (
+						{role === UserRole.Creator && (
 							<p className={styles.helpText}>
-								Код приглашения обязателен для регистрации креаторов и креаторов Pro
+								Код приглашения обязателен для регистрации креаторов
 							</p>
 						)}
-						{inviteCode && role !== UserRole.Creator && role !== UserRole.CreatorPro && (
+						{(role === UserRole.CreatorPro || role === UserRole.Producer) && (
 							<p className={styles.helpText}>
 								Код приглашения автоматически определит вашу роль
 							</p>
 						)}
 					</div>
 
-					<div className={styles.formGroup}>
-						<label htmlFor="role" className={styles.label}>
-							Роль *
-						</label>
-						<select
-							id="role"
-							value={role}
-							onChange={(e) => {
-								const newRole = e.target.value as UserRole
-								setRole(newRole)
-								// Clear error when switching to Producer role (no invite required)
-								if (newRole === UserRole.Producer) {
-									setError(null)
-								} else if (newRole === UserRole.Creator || newRole === UserRole.CreatorPro) {
-									// Show error if no invite code for creators
-									if (!inviteCode.trim()) {
-										setError('Код приглашения обязателен для креаторов и креаторов Pro')
-									}
-								}
-							}}
-							className={styles.select}
-							required
-						>
-							<option value={UserRole.Creator}>Креатор</option>
-							<option value={UserRole.CreatorPro}>Креатор Pro</option>
-							<option value={UserRole.Producer}>Продюсер</option>
-						</select>
-						<p className={styles.helpText}>
-							{role === UserRole.Creator && 'Базовый доступ к платформе'}
-							{role === UserRole.CreatorPro && 'Расширенные возможности и приоритет'}
-							{role === UserRole.Producer && 'Доступ к поиску креаторов'}
-						</p>
-					</div>
-
-					{/* Additional fields for creators */}
-					{(role === UserRole.Creator || role === UserRole.CreatorPro) && (
+					{/* Creator Form */}
+					{role === UserRole.Creator && (
 						<>
+							{/* 1. Имя Фамилия (обязательное) */}
 							<div className={styles.formGroup}>
 								<label htmlFor="name" className={styles.label}>
-									Имя *
+									Имя Фамилия *
 								</label>
 								<input
 									id="name"
@@ -249,14 +412,45 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 									value={name}
 									onChange={(e) => setName(e.target.value)}
 									className={styles.input}
-									placeholder="Ваше имя"
+									placeholder="Иван Иванов"
 									required
 								/>
 							</div>
 
+							{/* 2. Город */}
+							<div className={styles.formGroup}>
+								<label htmlFor="city" className={styles.label}>
+									Город
+								</label>
+								<input
+									id="city"
+									type="text"
+									value={city}
+									onChange={(e) => setCity(e.target.value)}
+									className={styles.input}
+									placeholder="Москва"
+								/>
+							</div>
+
+							{/* 3. Ваше фото (обязательное - возможность прикрепить файл) */}
+							<div className={styles.formGroup}>
+								<label htmlFor="photo" className={styles.label}>
+									Ваше фото *
+								</label>
+								<input
+									id="photo"
+									type="file"
+									accept="image/*"
+									onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+									className={styles.input}
+									required
+								/>
+							</div>
+
+							{/* 4. Краткое био... Расскажите о себе (обязательное, ограничить) */}
 							<div className={styles.formGroup}>
 								<label htmlFor="bio" className={styles.label}>
-									Биография *
+									Краткое био... Расскажите о себе *
 								</label>
 								<textarea
 									id="bio"
@@ -265,97 +459,476 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 									className={styles.textarea}
 									placeholder="Расскажите о себе и своем опыте"
 									rows={3}
-									required
-								/>
-							</div>
-
-							<div className={styles.formGroup}>
-								<label htmlFor="specialization" className={styles.label}>
-									Специализация *
-								</label>
-								<input
-									id="specialization"
-									type="text"
-									value={specialization}
-									onChange={(e) => setSpecialization(e.target.value)}
-									className={styles.input}
-									placeholder="Видеомонтаж, Цветокоррекция, Анимация"
+									maxLength={500}
 									required
 								/>
 								<p className={styles.helpText}>
-									Укажите через запятую ваши специализации
+									Ограничение: 500 символов ({bio.length}/500)
 								</p>
 							</div>
 
+							{/* 5. Skills (обязательное, сделать всплывашки на выбор или возможность написать свое) */}
 							<div className={styles.formGroup}>
-								<label htmlFor="tools" className={styles.label}>
-									Инструменты *
+								<label className={styles.label}>
+									Skills *
+								</label>
+								<div className={styles.checkboxGrid}>
+									{SKILLS_OPTIONS.map((skill) => (
+										<label key={skill} className={styles.checkboxLabel}>
+											<input
+												type="checkbox"
+												checked={skills.includes(skill)}
+												onChange={() => toggleSkill(skill)}
+												className={styles.checkbox}
+											/>
+											{skill}
+										</label>
+									))}
+								</div>
+								<p className={styles.helpText}>
+									Выберите ваши навыки или добавьте свои
+								</p>
+							</div>
+
+							{/* 6. Программы (обязательное. сделать всплывашки на выбор или возможность написать свое) */}
+							<div className={styles.formGroup}>
+								<label className={styles.label}>
+									Программы *
+								</label>
+								<div className={styles.checkboxGrid}>
+									{PROGRAMS_OPTIONS.map((program) => (
+										<label key={program} className={styles.checkboxLabel}>
+											<input
+												type="checkbox"
+												checked={programs.includes(program)}
+												onChange={() => toggleProgram(program)}
+												className={styles.checkbox}
+											/>
+											{program}
+										</label>
+									))}
+								</div>
+								<p className={styles.helpText}>
+									Выберите программы, которыми владеете
+								</p>
+							</div>
+
+							{/* 7. Опыт работы с ИИ: меньше года, 1-2 года, 2-5 лет, больше 5 лет (обязательное) */}
+							<div className={styles.formGroup}>
+								<label htmlFor="aiExperience" className={styles.label}>
+									Опыт работы с ИИ *
+								</label>
+								<select
+									id="aiExperience"
+									value={aiExperience}
+									onChange={(e) => setAiExperience(e.target.value)}
+									className={styles.select}
+									required
+								>
+									<option value="">Выберите опыт</option>
+									{AI_EXPERIENCE_OPTIONS.map((option) => (
+										<option key={option} value={option}>
+											{option}
+										</option>
+									))}
+								</select>
+							</div>
+
+							{/* 8. Перечислите проекты в генеративном контенте (необязательное) */}
+							<div className={styles.formGroup}>
+								<label htmlFor="projects" className={styles.label}>
+									Перечислите проекты в генеративном контенте
+								</label>
+								<textarea
+									id="projects"
+									value={projects}
+									onChange={(e) => setProjects(e.target.value)}
+									className={styles.textarea}
+									placeholder="Опишите ваши проекты с использованием ИИ"
+									rows={3}
+								/>
+							</div>
+
+							{/* 9. Тамблер: Номинируюсь в Skillout hackathon / не участвую */}
+							<div className={styles.formGroup}>
+								<label className={styles.checkboxLabel}>
+									<input
+										type="checkbox"
+										checked={hackathonParticipation}
+										onChange={(e) => setHackathonParticipation(e.target.checked)}
+										className={styles.checkbox}
+									/>
+									Номинируюсь в Skillout hackathon
+								</label>
+							</div>
+
+							{/* 10. Загрузите свои работы (сделать возможность загрузить видео - реализация через Kinescope, обязательное) */}
+							<div className={styles.formGroup}>
+								<label htmlFor="portfolio" className={styles.label}>
+									Загрузите свои работы *
 								</label>
 								<input
-									id="tools"
-									type="text"
-									value={tools}
-									onChange={(e) => setTools(e.target.value)}
+									id="portfolio"
+									type="file"
+									accept="video/*"
+									onChange={(e) => setPortfolio(e.target.files?.[0] || null)}
 									className={styles.input}
-									placeholder="Adobe Premiere Pro, After Effects, DaVinci Resolve"
 									required
 								/>
 								<p className={styles.helpText}>
-									Укажите через запятую инструменты, которыми владеете
+									Загрузите видео через Kinescope
 								</p>
 							</div>
 
+							{/* 11. Достижения: перечислите участие в ИИ-конкурсах, награды (необязательное) */}
 							<div className={styles.formGroup}>
-								<label htmlFor="clients" className={styles.label}>
-									Клиенты
+								<label htmlFor="achievements" className={styles.label}>
+									Достижения
 								</label>
-								<input
-									id="clients"
-									type="text"
-									value={clients}
-									onChange={(e) => setClients(e.target.value)}
-									className={styles.input}
-									placeholder="Nike, Adidas, Coca-Cola"
+								<textarea
+									id="achievements"
+									value={achievements}
+									onChange={(e) => setAchievements(e.target.value)}
+									className={styles.textarea}
+									placeholder="Участие в ИИ-конкурсах, награды"
+									rows={3}
 								/>
-								<p className={styles.helpText}>
-									Укажите через запятую известных клиентов (необязательно)
-								</p>
 							</div>
 
+							{/* 12. Контакты: ТГ, ВК, Кинопоиск, Vmeo, YT (Тг - обязательное, остальное на выбор) */}
 							<div className={styles.formGroup}>
 								<label className={styles.label}>Контакты</label>
 								<div className={styles.contactsGrid}>
 									<input
 										type="text"
-										value={contacts.telegram}
-										onChange={(e) => setContacts(prev => ({ ...prev, telegram: e.target.value }))}
+										value={creatorContacts.telegram}
+										onChange={(e) => setCreatorContacts(prev => ({ ...prev, telegram: e.target.value }))}
 										className={styles.input}
-										placeholder="Telegram"
+										placeholder="Telegram *"
+										required
 									/>
 									<input
 										type="text"
-										value={contacts.instagram}
-										onChange={(e) => setContacts(prev => ({ ...prev, instagram: e.target.value }))}
+										value={creatorContacts.vk}
+										onChange={(e) => setCreatorContacts(prev => ({ ...prev, vk: e.target.value }))}
 										className={styles.input}
-										placeholder="Instagram"
+										placeholder="ВКонтакте"
 									/>
 									<input
 										type="text"
-										value={contacts.behance}
-										onChange={(e) => setContacts(prev => ({ ...prev, behance: e.target.value }))}
+										value={creatorContacts.kinopoisk}
+										onChange={(e) => setCreatorContacts(prev => ({ ...prev, kinopoisk: e.target.value }))}
 										className={styles.input}
-										placeholder="Behance"
+										placeholder="Кинопоиск"
 									/>
 									<input
 										type="text"
-										value={contacts.linkedin}
-										onChange={(e) => setContacts(prev => ({ ...prev, linkedin: e.target.value }))}
+										value={creatorContacts.vimeo}
+										onChange={(e) => setCreatorContacts(prev => ({ ...prev, vimeo: e.target.value }))}
 										className={styles.input}
-										placeholder="LinkedIn"
+										placeholder="Vimeo"
+									/>
+									<input
+										type="text"
+										value={creatorContacts.youtube}
+										onChange={(e) => setCreatorContacts(prev => ({ ...prev, youtube: e.target.value }))}
+										className={styles.input}
+										placeholder="YouTube"
 									/>
 								</div>
 								<p className={styles.helpText}>
-									Укажите ваши социальные сети (необязательно)
+									Telegram обязателен, остальные опционально
+								</p>
+							</div>
+
+							{/* 13. Галочка пользовательского соглашения */}
+							<div className={styles.formGroup}>
+								<label className={styles.checkboxLabel}>
+									<input
+										type="checkbox"
+										checked={userAgreement}
+										onChange={(e) => setUserAgreement(e.target.checked)}
+										className={styles.checkbox}
+										required
+									/>
+									Пользовательское соглашение *
+								</label>
+							</div>
+
+							{/* 14. Галочка "Показывать меня в базе SKILLOUT Hub" */}
+							<div className={styles.formGroup}>
+								<label className={styles.checkboxLabel}>
+									<input
+										type="checkbox"
+										checked={showInHub}
+										onChange={(e) => setShowInHub(e.target.checked)}
+										className={styles.checkbox}
+									/>
+									Показывать меня в базе SKILLOUT Hub
+								</label>
+							</div>
+						</>
+					)}
+
+					{/* Production Form (same as Producer) */}
+					{role === UserRole.CreatorPro && (
+						<>
+							{/* 1. Код инвайта */}
+							<div className={styles.formGroup}>
+								<label htmlFor="productionInviteCode" className={styles.label}>
+									Код приглашения
+								</label>
+								<input
+									id="productionInviteCode"
+									type="text"
+									value={inviteCode}
+									onChange={handleInviteCodeChange}
+									className={styles.input}
+									placeholder="Введите код приглашения (если есть)"
+								/>
+								<p className={styles.helpText}>
+									Код приглашения автоматически определит вашу роль
+								</p>
+							</div>
+
+							{/* 2. Имя Фамилия продюсера */}
+							<div className={styles.formGroup}>
+								<label htmlFor="productionName" className={styles.label}>
+									Имя Фамилия продюсера *
+								</label>
+								<input
+									id="productionName"
+									type="text"
+									value={producerName}
+									onChange={(e) => setProducerName(e.target.value)}
+									className={styles.input}
+									placeholder="Петр Петров"
+									required
+								/>
+							</div>
+
+							{/* 3. Продакшн / Компания */}
+							<div className={styles.formGroup}>
+								<label htmlFor="productionCompany" className={styles.label}>
+									Продакшн / Компания *
+								</label>
+								<input
+									id="productionCompany"
+									type="text"
+									value={company}
+									onChange={(e) => setCompany(e.target.value)}
+									className={styles.input}
+									placeholder="Название компании"
+									required
+								/>
+							</div>
+
+							{/* 4. Описание */}
+							<div className={styles.formGroup}>
+								<label htmlFor="productionDescription" className={styles.label}>
+									Описание
+								</label>
+								<textarea
+									id="productionDescription"
+									value={description}
+									onChange={(e) => setDescription(e.target.value)}
+									className={styles.textarea}
+									placeholder="Опишите вашу компанию"
+									rows={3}
+								/>
+							</div>
+
+							{/* 5. Город */}
+							<div className={styles.formGroup}>
+								<label htmlFor="productionCity" className={styles.label}>
+									Город
+								</label>
+								<input
+									id="productionCity"
+									type="text"
+									value={producerCity}
+									onChange={(e) => setProducerCity(e.target.value)}
+									className={styles.input}
+									placeholder="Москва"
+								/>
+							</div>
+
+							{/* 6. Сайт */}
+							<div className={styles.formGroup}>
+								<label htmlFor="productionWebsite" className={styles.label}>
+									Сайт
+								</label>
+								<input
+									id="productionWebsite"
+									type="url"
+									value={website}
+									onChange={(e) => setWebsite(e.target.value)}
+									className={styles.input}
+									placeholder="https://example.com"
+								/>
+							</div>
+
+							{/* 7. Контакты: почта, номер (обязательно), соцсети - опционально */}
+							<div className={styles.formGroup}>
+								<label className={styles.label}>Контакты</label>
+								<div className={styles.contactsGrid}>
+									<input
+										type="email"
+										value={producerContacts.email}
+										onChange={(e) => setProducerContacts(prev => ({ ...prev, email: e.target.value }))}
+										className={styles.input}
+										placeholder="Email"
+									/>
+									<input
+										type="tel"
+										value={producerContacts.phone}
+										onChange={(e) => setProducerContacts(prev => ({ ...prev, phone: e.target.value }))}
+										className={styles.input}
+										placeholder="Номер телефона *"
+										required
+									/>
+									<input
+										type="text"
+										value={producerContacts.socials}
+										onChange={(e) => setProducerContacts(prev => ({ ...prev, socials: e.target.value }))}
+										className={styles.input}
+										placeholder="Социальные сети"
+									/>
+								</div>
+								<p className={styles.helpText}>
+									Номер телефона обязателен, остальные опционально
+								</p>
+							</div>
+						</>
+					)}
+
+					{/* Producer Form */}
+					{role === UserRole.Producer && (
+						<>
+							{/* 1. Код инвайта */}
+							<div className={styles.formGroup}>
+								<label htmlFor="producerInviteCode" className={styles.label}>
+									Код приглашения
+								</label>
+								<input
+									id="producerInviteCode"
+									type="text"
+									value={inviteCode}
+									onChange={handleInviteCodeChange}
+									className={styles.input}
+									placeholder="Введите код приглашения (если есть)"
+								/>
+								<p className={styles.helpText}>
+									Код приглашения автоматически определит вашу роль
+								</p>
+							</div>
+
+							{/* 2. Имя Фамилия продюсера */}
+							<div className={styles.formGroup}>
+								<label htmlFor="producerName" className={styles.label}>
+									Имя Фамилия продюсера *
+								</label>
+								<input
+									id="producerName"
+									type="text"
+									value={producerName}
+									onChange={(e) => setProducerName(e.target.value)}
+									className={styles.input}
+									placeholder="Петр Петров"
+									required
+								/>
+							</div>
+
+							{/* 3. Продакшн / Компания */}
+							<div className={styles.formGroup}>
+								<label htmlFor="company" className={styles.label}>
+									Продакшн / Компания *
+								</label>
+								<input
+									id="company"
+									type="text"
+									value={company}
+									onChange={(e) => setCompany(e.target.value)}
+									className={styles.input}
+									placeholder="Название компании"
+									required
+								/>
+							</div>
+
+							{/* 4. Описание */}
+							<div className={styles.formGroup}>
+								<label htmlFor="description" className={styles.label}>
+									Описание
+								</label>
+								<textarea
+									id="description"
+									value={description}
+									onChange={(e) => setDescription(e.target.value)}
+									className={styles.textarea}
+									placeholder="Опишите вашу компанию"
+									rows={3}
+								/>
+							</div>
+
+							{/* 5. Город */}
+							<div className={styles.formGroup}>
+								<label htmlFor="producerCity" className={styles.label}>
+									Город
+								</label>
+								<input
+									id="producerCity"
+									type="text"
+									value={producerCity}
+									onChange={(e) => setProducerCity(e.target.value)}
+									className={styles.input}
+									placeholder="Москва"
+								/>
+							</div>
+
+							{/* 6. Сайт */}
+							<div className={styles.formGroup}>
+								<label htmlFor="website" className={styles.label}>
+									Сайт
+								</label>
+								<input
+									id="website"
+									type="url"
+									value={website}
+									onChange={(e) => setWebsite(e.target.value)}
+									className={styles.input}
+									placeholder="https://example.com"
+								/>
+							</div>
+
+							{/* 7. Контакты: почта, номер (обязательно), соцсети - опционально */}
+							<div className={styles.formGroup}>
+								<label className={styles.label}>Контакты</label>
+								<div className={styles.contactsGrid}>
+									<input
+										type="email"
+										value={producerContacts.email}
+										onChange={(e) => setProducerContacts(prev => ({ ...prev, email: e.target.value }))}
+										className={styles.input}
+										placeholder="Email"
+									/>
+									<input
+										type="tel"
+										value={producerContacts.phone}
+										onChange={(e) => setProducerContacts(prev => ({ ...prev, phone: e.target.value }))}
+										className={styles.input}
+										placeholder="Номер телефона *"
+										required
+									/>
+									<input
+										type="text"
+										value={producerContacts.socials}
+										onChange={(e) => setProducerContacts(prev => ({ ...prev, socials: e.target.value }))}
+										className={styles.input}
+										placeholder="Социальные сети"
+									/>
+								</div>
+								<p className={styles.helpText}>
+									Номер телефона обязателен, остальные опционально
 								</p>
 							</div>
 						</>
