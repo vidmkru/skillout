@@ -80,6 +80,29 @@ button {
   @include reset-btn;
 }
 
+// Form elements responsive behavior
+input,
+textarea,
+select {
+  max-width: 100%;
+  box-sizing: border-box;
+
+  // Prevent zoom on iOS devices
+  @media screen and (max-width: 768px) {
+    font-size: 16px;
+  }
+}
+
+// Prevent images and media from overflowing
+img,
+video,
+iframe,
+object,
+embed {
+  max-width: 100%;
+  height: auto;
+}
+
 .visually-hidden {
   @include visually-hidden;
 }
