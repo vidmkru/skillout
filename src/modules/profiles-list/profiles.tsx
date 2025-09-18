@@ -91,6 +91,8 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		withPortfolio: false
 	})
 	const [showFilters, setShowFilters] = useState(false)
+	const [selectedProfile, setSelectedProfile] = useState<CreatorProfile | null>(null)
+	const [showModal, setShowModal] = useState(false)
 
 	// Ref to store the latest fetchProfiles function
 	const fetchProfilesRef = useRef<typeof fetchProfiles>()
@@ -467,8 +469,18 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		}
 	}
 
-	const handleProfileClick = (id: string) => {
-		// Use profile ID (which is the same as user ID)
+	const handleProfileClick = (profile: CreatorProfile) => {
+		setSelectedProfile(profile)
+		setShowModal(true)
+	}
+
+	const handleCloseModal = () => {
+		setShowModal(false)
+		setSelectedProfile(null)
+	}
+
+	const handleViewFullProfile = (id: string) => {
+		handleCloseModal()
 		router.push(`/profile/${id}`)
 	}
 
@@ -629,7 +641,7 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 					<>
 						<div className={styles.grid}>
 							{profiles.map((profile) => (
-								<article key={profile.id} className={styles.card} onClick={() => handleProfileClick(profile.id)}>
+								<article key={profile.id} className={styles.card} onClick={() => handleProfileClick(profile)}>
 									<div className={styles.avatar}>
 										{profile.avatar ? (
 											<Image
@@ -723,6 +735,135 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 					</>
 				)}
 			</Wrapper>
+
+			{/* Profile Modal */}
+			{showModal && selectedProfile && (
+				<div className={styles.modalOverlay} onClick={handleCloseModal}>
+					<div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+						<div className={styles.modalHeader}>
+							<h2 className={styles.modalTitle}>{selectedProfile.name}</h2>
+							<button className={styles.closeButton} onClick={handleCloseModal}>
+								×
+							</button>
+						</div>
+
+						<div className={styles.modalContent}>
+							<div className={styles.modalLeft}>
+								<div className={styles.modalAvatar}>
+									{selectedProfile.avatar ? (
+										<Image
+											src={selectedProfile.avatar}
+											alt={selectedProfile.name}
+											width={200}
+											height={200}
+											className={styles.modalAvatarImage}
+										/>
+									) : (
+										<div className={styles.modalAvatarPlaceholder}>
+											{selectedProfile.name.charAt(0).toUpperCase()}
+										</div>
+									)}
+								</div>
+
+								<div className={styles.socialLinks}>
+									{selectedProfile.contacts.telegram && (
+										<a href={`https://t.me/${selectedProfile.contacts.telegram.replace('@', '')}`} className={styles.socialLink}>
+											📱
+										</a>
+									)}
+									{selectedProfile.contacts.instagram && (
+										<a href={`https://instagram.com/${selectedProfile.contacts.instagram.replace('@', '')}`} className={styles.socialLink}>
+											📷
+										</a>
+									)}
+									{selectedProfile.contacts.linkedin && (
+										<a href={`https://linkedin.com/in/${selectedProfile.contacts.linkedin}`} className={styles.socialLink}>
+											💼
+										</a>
+									)}
+									{selectedProfile.contacts.behance && (
+										<a href={`https://behance.net/${selectedProfile.contacts.behance}`} className={styles.socialLink}>
+											🎨
+										</a>
+									)}
+								</div>
+							</div>
+
+							<div className={styles.modalRight}>
+								<div className={styles.profileInfo}>
+									<div className={styles.infoItem}>
+										<span className={styles.infoLabel}>Специализация:</span>
+										<span className={styles.infoValue}>{selectedProfile.specialization.join(', ')}</span>
+									</div>
+									<div className={styles.infoItem}>
+										<span className={styles.infoLabel}>Инструменты:</span>
+										<span className={styles.infoValue}>{selectedProfile.tools.join(', ')}</span>
+									</div>
+									<div className={styles.infoItem}>
+										<span className={styles.infoLabel}>Опыт:</span>
+										<span className={styles.infoValue}>
+											{selectedProfile.experience === ExperienceLevel.LessThanYear ? 'Менее 1 года' :
+												selectedProfile.experience === ExperienceLevel.OneToTwo ? '1-2 года' :
+													'2+ года'}
+										</span>
+									</div>
+									<div className={styles.infoItem}>
+										<span className={styles.infoLabel}>Рейтинг:</span>
+										<span className={styles.infoValue}>
+											<span className={styles.stars}>★★★★★</span>
+											{selectedProfile.rating.toFixed(1)}
+										</span>
+									</div>
+									{selectedProfile.clients.length > 0 && (
+										<div className={styles.infoItem}>
+											<span className={styles.infoLabel}>Клиенты:</span>
+											<span className={styles.infoValue}>{selectedProfile.clients.join(', ')}</span>
+										</div>
+									)}
+								</div>
+
+								<div className={styles.bio}>
+									<p>{selectedProfile.bio}</p>
+								</div>
+
+								{selectedProfile.portfolio.length > 0 && (
+									<div className={styles.portfolio}>
+										<h4>Портфолио ({selectedProfile.portfolio.length})</h4>
+										<div className={styles.portfolioItems}>
+											{selectedProfile.portfolio.slice(0, 3).map((item) => (
+												<div key={item.id} className={styles.portfolioItem}>
+													{item.videoUrl && (
+														<a href={item.videoUrl} target="_blank" rel="noopener noreferrer">
+															{item.title}
+														</a>
+													)}
+												</div>
+											))}
+											{selectedProfile.portfolio.length > 3 && (
+												<div className={styles.portfolioMore}>
+													+{selectedProfile.portfolio.length - 3} еще
+												</div>
+											)}
+										</div>
+									</div>
+								)}
+							</div>
+						</div>
+
+						<div className={styles.modalActions}>
+							<button
+								onClick={() => handleViewFullProfile(selectedProfile.id)}
+								className={styles.fullProfileButton}
+							>
+								Полная страница профиля
+							</button>
+							<button onClick={handleCloseModal} className={styles.closeModalButton}>
+								Закрыть
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</section>
 	)
 }
