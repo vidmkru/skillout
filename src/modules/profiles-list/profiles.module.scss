@@ -497,3 +497,342 @@
 		}
 	}
 }
+
+// Modal styles
+.modalOverlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.8);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	padding: func.rem(20);
+}
+
+.modal {
+	background: #1a1a1a;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: func.rem(16);
+	max-width: func.rem(800);
+	width: 100%;
+	max-height: 90vh;
+	overflow-y: auto;
+	position: relative;
+	box-shadow: 0 func.rem(20) func.rem(40) rgba(0, 0, 0, 0.5);
+}
+
+.modalHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: func.rem(24) func.rem(24) 0;
+	border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+	padding-bottom: func.rem(20);
+	margin-bottom: func.rem(24);
+	background: rgba(102, 126, 234, 0.05);
+	border-radius: func.rem(16) func.rem(16) 0 0;
+}
+
+.modalTitle {
+	font-size: func.rem(32);
+	font-weight: 800;
+	color: #ffffff;
+	margin: 0;
+	text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.closeButton {
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: func.rem(8);
+	color: #ffffff;
+	font-size: func.rem(24);
+	cursor: pointer;
+	padding: func.rem(8) func.rem(12);
+	line-height: 1;
+	transition: all 0.2s ease;
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.2);
+		border-color: rgba(255, 255, 255, 0.4);
+		transform: scale(1.05);
+	}
+}
+
+.modalContent {
+	display: grid;
+	grid-template-columns: func.rem(250) 1fr;
+	gap: func.rem(32);
+	padding: 0 func.rem(24);
+}
+
+.modalLeft {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: func.rem(20);
+}
+
+.modalAvatar {
+	width: func.rem(200);
+	height: func.rem(200);
+	border-radius: func.rem(12);
+	overflow: hidden;
+	background: rgba(255, 255, 255, 0.1);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 3px solid rgba(102, 126, 234, 0.3);
+	box-shadow: 0 func.rem(8) func.rem(24) rgba(0, 0, 0, 0.3);
+}
+
+.modalAvatarImage {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.modalAvatarPlaceholder {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: func.rem(72);
+	font-weight: 700;
+	color: #ffffff;
+	background: linear-gradient(135deg, var(--color-accent), #667eea);
+	text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.socialLinks {
+	display: flex;
+	gap: func.rem(12);
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.socialLink {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: func.rem(44);
+	height: func.rem(44);
+	background: rgba(255, 255, 255, 0.15);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: func.rem(10);
+	text-decoration: none;
+	font-size: func.rem(20);
+	transition: all 0.2s ease;
+	box-shadow: 0 func.rem(4) func.rem(12) rgba(0, 0, 0, 0.2);
+
+	&:hover {
+		background: var(--color-accent);
+		border-color: var(--color-accent);
+		transform: translateY(-3px);
+		box-shadow: 0 func.rem(8) func.rem(20) rgba(102, 126, 234, 0.3);
+	}
+}
+
+.modalRight {
+	display: flex;
+	flex-direction: column;
+	gap: func.rem(24);
+}
+
+.profileInfo {
+	display: flex;
+	flex-direction: column;
+	gap: func.rem(12);
+}
+
+.infoItem {
+	display: flex;
+	flex-direction: column;
+	gap: func.rem(4);
+}
+
+.infoLabel {
+	font-size: func.rem(13);
+	font-weight: 700;
+	color: var(--color-accent);
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.infoValue {
+	font-size: func.rem(16);
+	font-weight: 500;
+	color: #ffffff;
+	line-height: 1.5;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.bio {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: func.rem(12);
+	padding: func.rem(20);
+
+	p {
+		font-size: func.rem(16);
+		line-height: 1.7;
+		color: #ffffff;
+		margin: 0;
+		font-weight: 400;
+	}
+}
+
+.portfolio {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: func.rem(12);
+	padding: func.rem(20);
+
+	h4 {
+		font-size: func.rem(18);
+		font-weight: 700;
+		color: #ffffff;
+		margin: 0 0 func.rem(16) 0;
+		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	}
+}
+
+.portfolioItems {
+	display: flex;
+	flex-direction: column;
+	gap: func.rem(8);
+}
+
+.portfolioItem {
+	a {
+		color: var(--color-accent);
+		text-decoration: none;
+		font-size: func.rem(14);
+		transition: color 0.2s ease;
+
+		&:hover {
+			color: white;
+		}
+	}
+}
+
+.portfolioMore {
+	font-size: func.rem(14);
+	color: rgba(255, 255, 255, 0.6);
+	font-style: italic;
+}
+
+.modalActions {
+	display: flex;
+	gap: func.rem(16);
+	padding: func.rem(24);
+	border-top: 2px solid rgba(102, 126, 234, 0.3);
+	margin-top: func.rem(24);
+	background: rgba(102, 126, 234, 0.05);
+	border-radius: 0 0 func.rem(16) func.rem(16);
+}
+
+.fullProfileButton {
+	flex: 1;
+	padding: func.rem(18) func.rem(28);
+	background: linear-gradient(135deg, var(--color-accent), #667eea);
+	color: #ffffff;
+	border: none;
+	border-radius: func.rem(12);
+	font-size: func.rem(16);
+	font-weight: 700;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 func.rem(6) func.rem(20) rgba(102, 126, 234, 0.3);
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+
+	&:hover {
+		background: linear-gradient(135deg, #667eea, var(--color-accent));
+		transform: translateY(-3px);
+		box-shadow: 0 func.rem(10) func.rem(30) rgba(102, 126, 234, 0.4);
+	}
+}
+
+.closeModalButton {
+	padding: func.rem(18) func.rem(28);
+	background: rgba(255, 255, 255, 0.1);
+	color: #ffffff;
+	border: 2px solid rgba(255, 255, 255, 0.3);
+	border-radius: func.rem(12);
+	font-size: func.rem(16);
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.2);
+		border-color: rgba(255, 255, 255, 0.6);
+		transform: translateY(-2px);
+		box-shadow: 0 func.rem(6) func.rem(20) rgba(255, 255, 255, 0.1);
+	}
+}
+
+// Responsive modal styles
+@include mixins.tablet {
+	.modal {
+		max-width: 95vw;
+		margin: func.rem(20);
+	}
+
+	.modalContent {
+		grid-template-columns: 1fr;
+		gap: func.rem(24);
+	}
+
+	.modalLeft {
+		align-items: center;
+	}
+
+	.modalActions {
+		flex-direction: column;
+	}
+}
+
+@include mixins.tablet-small {
+	.modalOverlay {
+		padding: func.rem(10);
+	}
+
+	.modal {
+		max-height: 95vh;
+	}
+
+	.modalHeader {
+		padding: func.rem(16) func.rem(16) 0;
+		padding-bottom: func.rem(16);
+	}
+
+	.modalTitle {
+		font-size: func.rem(24);
+	}
+
+	.modalContent {
+		padding: 0 func.rem(16);
+		gap: func.rem(20);
+	}
+
+	.modalAvatar {
+		width: func.rem(150);
+		height: func.rem(150);
+	}
+
+	.modalAvatarPlaceholder {
+		font-size: func.rem(54);
+	}
+
+	.modalActions {
+		padding: func.rem(16);
+	}
+}
