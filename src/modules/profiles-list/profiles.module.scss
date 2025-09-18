@@ -461,3 +461,39 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+// No results message
+.noResults {
+	text-align: center;
+	padding: func.rem(60) func.rem(20);
+	color: rgba(255, 255, 255, 0.7);
+
+	h3 {
+		font-size: func.rem(24);
+		font-weight: 600;
+		margin-bottom: func.rem(12);
+		color: white;
+	}
+
+	p {
+		font-size: func.rem(16);
+		margin-bottom: func.rem(24);
+		line-height: 1.5;
+	}
+
+	.clearButton {
+		padding: func.rem(12) func.rem(24);
+		background: var(--color-accent);
+		color: white;
+		border: none;
+		border-radius: func.rem(8);
+		font-size: func.rem(14);
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s ease;
+
+		&:hover {
+			background: color-mix(in srgb, var(--color-accent) 80%, black);
+		}
+	}
+}

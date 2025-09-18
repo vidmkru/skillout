@@ -362,14 +362,28 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 	// Auto-apply search filter with debounce
 	useEffect(() => {
 		const timeoutId = setTimeout(() => {
-			if (filters.search !== '') {
-				setPage(1)
-				fetchProfiles(1)
-			}
+			setPage(1)
+			fetchProfiles(1)
 		}, 500) // 500ms debounce
 
 		return () => clearTimeout(timeoutId)
 	}, [filters.search, fetchProfiles])
+
+	// Auto-apply other filters immediately
+	useEffect(() => {
+		setPage(1)
+		fetchProfiles(1)
+	}, [filters.skills, filters.programs, filters.experience, filters.hackathon, filters.withPortfolio, fetchProfiles])
+
+	// Auto-apply city filter with debounce
+	useEffect(() => {
+		const timeoutId = setTimeout(() => {
+			setPage(1)
+			fetchProfiles(1)
+		}, 500) // 500ms debounce
+
+		return () => clearTimeout(timeoutId)
+	}, [filters.city, fetchProfiles])
 
 	const loadMore = () => {
 		if (!loading && hasMore) {
@@ -594,6 +608,14 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 
 				{loading && profiles.length === 0 ? (
 					<div className={styles.loading}>Загрузка профилей...</div>
+				) : profiles.length === 0 ? (
+					<div className={styles.noResults}>
+						<h3>Ничего не найдено</h3>
+						<p>Попробуйте изменить параметры поиска или фильтры</p>
+						<button onClick={clearFilters} className={styles.clearButton}>
+							Очистить все фильтры
+						</button>
+					</div>
 				) : (
 					<>
 						<div className={styles.grid}>
