@@ -216,6 +216,49 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		}
 	], [])
 
+	// Build query parameters for API
+	const buildQueryParams = useCallback((pageNum: number) => {
+		const params = new URLSearchParams()
+		params.append('page', pageNum.toString())
+		params.append('limit', '12')
+
+		if (filters.search) {
+			params.append('search', filters.search)
+		}
+
+		if (filters.skills.length > 0) {
+			params.append('skills', filters.skills.join(','))
+		}
+
+		if (filters.programs.length > 0) {
+			params.append('programs', filters.programs.join(','))
+		}
+
+		if (filters.experience) {
+			const experienceMap: Record<string, string> = {
+				'менее 1 года': 'lt1',
+				'1-2 года': '1-2',
+				'2-5 лет': '2+',
+				'больше 5 лет': '2+'
+			}
+			params.append('experience', experienceMap[filters.experience])
+		}
+
+		if (filters.hackathon !== null) {
+			params.append('hackathon', filters.hackathon.toString())
+		}
+
+		if (filters.city) {
+			params.append('city', filters.city)
+		}
+
+		if (filters.withPortfolio) {
+			params.append('withPortfolio', 'true')
+		}
+
+		return params.toString()
+	}, [filters])
+
 	const fetchProfiles = useCallback(async (pageNum: number = 1) => {
 		try {
 			console.log('🔍 ProfilesList: Fetching profiles, page:', pageNum)
@@ -284,8 +327,10 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 				return
 			}
 
+			const queryParams = buildQueryParams(pageNum)
+			console.log('🔍 ProfilesList: API query params:', queryParams)
 			const response = await axiosInstance.get<{ success: boolean; data: PaginatedResponse<CreatorProfile> }>(
-				`/api/profiles?page=${pageNum}&limit=12`
+				`/api/profiles?${queryParams}`
 			)
 
 			console.log('🔍 ProfilesList: Response received:', response.data)
@@ -308,11 +353,23 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		} finally {
 			setLoading(false)
 		}
-	}, [filters, mockProfiles])
+	}, [filters, mockProfiles, buildQueryParams])
 
 	useEffect(() => {
 		fetchProfiles()
 	}, [fetchProfiles])
+
+	// Auto-apply search filter with debounce
+	useEffect(() => {
+		const timeoutId = setTimeout(() => {
+			if (filters.search !== '') {
+				setPage(1)
+				fetchProfiles(1)
+			}
+		}, 500) // 500ms debounce
+
+		return () => clearTimeout(timeoutId)
+	}, [filters.search, fetchProfiles])
 
 	const loadMore = () => {
 		if (!loading && hasMore) {
