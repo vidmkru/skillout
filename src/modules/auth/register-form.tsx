@@ -62,6 +62,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 	const [bio, setBio] = useState('')
 	const [skills, setSkills] = useState<string[]>([])
 	const [programs, setPrograms] = useState<string[]>([])
+	const [otherSkill, setOtherSkill] = useState('')
+	const [otherProgram, setOtherProgram] = useState('')
+	const [showOtherSkill, setShowOtherSkill] = useState(false)
+	const [showOtherProgram, setShowOtherProgram] = useState(false)
 	const [aiExperience, setAiExperience] = useState('')
 	const [projects, setProjects] = useState('')
 	const [hackathonParticipation, setHackathonParticipation] = useState(false)
@@ -106,15 +110,49 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 		)
 	}
 
+	const handleOtherSkillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value
+		setOtherSkill(value)
+
+		// Обновляем массив skills
+		const otherSkillValue = value.trim()
+		if (otherSkillValue) {
+			// Удаляем предыдущее значение "другое" если было
+			const filteredSkills = skills.filter(skill => !skill.startsWith('Другое: '))
+			// Добавляем новое значение
+			setSkills([...filteredSkills, `Другое: ${otherSkillValue}`])
+		} else {
+			// Если поле пустое, удаляем "другое" из массива
+			setSkills(prev => prev.filter(skill => !skill.startsWith('Другое: ')))
+		}
+	}
+
+	const handleOtherProgramChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value
+		setOtherProgram(value)
+
+		// Обновляем массив programs
+		const otherProgramValue = value.trim()
+		if (otherProgramValue) {
+			// Удаляем предыдущее значение "другое" если было
+			const filteredPrograms = programs.filter(program => !program.startsWith('Другое: '))
+			// Добавляем новое значение
+			setPrograms([...filteredPrograms, `Другое: ${otherProgramValue}`])
+		} else {
+			// Если поле пустое, удаляем "другое" из массива
+			setPrograms(prev => prev.filter(program => !program.startsWith('Другое: ')))
+		}
+	}
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		setLoading(true)
 		setError(null)
 		setSuccess(null)
 
-		// Validate invite code requirement for creators only
-		if (role === UserRole.Creator && !inviteCode.trim()) {
-			setError('Код приглашения обязателен для регистрации креаторов')
+		// Validate invite code requirement for all roles
+		if (!inviteCode.trim()) {
+			setError('Код приглашения обязателен для регистрации')
 			setLoading(false)
 			return
 		}
@@ -245,9 +283,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
 	const validateInviteCode = async (code: string) => {
 		if (!code) {
-			if (role === UserRole.Creator) {
-				setError('Код приглашения обязателен для креаторов')
-			}
+			setError('Код приглашения обязателен для регистрации')
 			return
 		}
 
@@ -275,8 +311,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 		if (code.length >= 8) {
 			validateInviteCode(code)
 		} else {
-			if (code.length === 0 && role === UserRole.Creator) {
-				setError('Код приглашения обязателен для креаторов')
+			if (code.length === 0) {
+				setError('Код приглашения обязателен для регистрации')
 			} else {
 				setError(null)
 			}
@@ -303,9 +339,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								onClick={() => {
 									const newRole = UserRole.Creator
 									setRole(newRole)
-									// Show error if no invite code for creators
+									// Show error if no invite code
 									if (!inviteCode.trim()) {
-										setError('Код приглашения обязателен для креаторов')
+										setError('Код приглашения обязателен для регистрации')
 									}
 								}}
 								className={`${styles.roleButton} ${role === UserRole.Creator ? styles.roleButtonActive : ''}`}
@@ -321,8 +357,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								onClick={() => {
 									const newRole = UserRole.CreatorPro
 									setRole(newRole)
-									// Clear error when switching to Production role (no invite required)
-									setError(null)
+									// Show error if no invite code
+									if (!inviteCode.trim()) {
+										setError('Код приглашения обязателен для регистрации')
+									}
 								}}
 								className={`${styles.roleButton} ${role === UserRole.CreatorPro ? styles.roleButtonActive : ''}`}
 							>
@@ -337,8 +375,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								onClick={() => {
 									const newRole = UserRole.Producer
 									setRole(newRole)
-									// Clear error when switching to Producer role (no invite required)
-									setError(null)
+									// Show error if no invite code
+									if (!inviteCode.trim()) {
+										setError('Код приглашения обязателен для регистрации')
+									}
 								}}
 								className={`${styles.roleButton} ${role === UserRole.Producer ? styles.roleButtonActive : ''}`}
 							>
@@ -368,34 +408,23 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 					{/* Invite Code field */}
 					<div className={styles.formGroup}>
 						<label htmlFor="inviteCode" className={styles.label}>
-							Код приглашения {role === UserRole.Creator && '*'}
+							Код приглашения *
 						</label>
 						<input
 							id="inviteCode"
 							type="text"
 							value={inviteCode}
 							onChange={handleInviteCodeChange}
-							className={`${styles.input} ${role === UserRole.Creator && !inviteCode.trim()
+							className={`${styles.input} ${!inviteCode.trim()
 								? styles.requiredField
 								: ''
 								}`}
-							placeholder={
-								role === UserRole.Creator
-									? "Введите код приглашения (обязательно)"
-									: "Введите код приглашения (если есть)"
-							}
-							required={role === UserRole.Creator}
+							placeholder="Введите код приглашения (обязательно)"
+							required
 						/>
-						{role === UserRole.Creator && (
-							<p className={styles.helpText}>
-								Код приглашения обязателен для регистрации креаторов
-							</p>
-						)}
-						{(role === UserRole.CreatorPro || role === UserRole.Producer) && (
-							<p className={styles.helpText}>
-								Код приглашения автоматически определит вашу роль
-							</p>
-						)}
+						<p className={styles.helpText}>
+							Код приглашения обязателен для регистрации и автоматически определит вашу роль
+						</p>
 					</div>
 
 					{/* Creator Form */}
@@ -484,7 +513,38 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 											{skill}
 										</label>
 									))}
+
+									{/* Чекбокс "Другое" для навыков */}
+									<label className={styles.checkboxLabel}>
+										<input
+											type="checkbox"
+											checked={showOtherSkill}
+											onChange={(e) => {
+												setShowOtherSkill(e.target.checked)
+												if (!e.target.checked) {
+													setOtherSkill('')
+													setSkills(prev => prev.filter(skill => !skill.startsWith('Другое: ')))
+												}
+											}}
+											className={styles.checkbox}
+										/>
+										Другое
+									</label>
 								</div>
+
+								{/* Поле ввода для "Другое" навыка */}
+								{showOtherSkill && (
+									<div className={styles.otherField}>
+										<input
+											type="text"
+											value={otherSkill}
+											onChange={handleOtherSkillChange}
+											className={styles.input}
+											placeholder="Укажите ваш навык"
+										/>
+									</div>
+								)}
+
 								<p className={styles.helpText}>
 									Выберите ваши навыки или добавьте свои
 								</p>
@@ -507,7 +567,38 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 											{program}
 										</label>
 									))}
+
+									{/* Чекбокс "Другое" для программ */}
+									<label className={styles.checkboxLabel}>
+										<input
+											type="checkbox"
+											checked={showOtherProgram}
+											onChange={(e) => {
+												setShowOtherProgram(e.target.checked)
+												if (!e.target.checked) {
+													setOtherProgram('')
+													setPrograms(prev => prev.filter(program => !program.startsWith('Другое: ')))
+												}
+											}}
+											className={styles.checkbox}
+										/>
+										Другое
+									</label>
 								</div>
+
+								{/* Поле ввода для "Другое" программы */}
+								{showOtherProgram && (
+									<div className={styles.otherField}>
+										<input
+											type="text"
+											value={otherProgram}
+											onChange={handleOtherProgramChange}
+											className={styles.input}
+											placeholder="Укажите вашу программу"
+										/>
+									</div>
+								)}
+
 								<p className={styles.helpText}>
 									Выберите программы, которыми владеете
 								</p>
@@ -673,25 +764,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 					{/* Production Form (same as Producer) */}
 					{role === UserRole.CreatorPro && (
 						<>
-							{/* 1. Код инвайта */}
-							<div className={styles.formGroup}>
-								<label htmlFor="productionInviteCode" className={styles.label}>
-									Код приглашения
-								</label>
-								<input
-									id="productionInviteCode"
-									type="text"
-									value={inviteCode}
-									onChange={handleInviteCodeChange}
-									className={styles.input}
-									placeholder="Введите код приглашения (если есть)"
-								/>
-								<p className={styles.helpText}>
-									Код приглашения автоматически определит вашу роль
-								</p>
-							</div>
-
-							{/* 2. Имя Фамилия продюсера */}
+							{/* 1. Имя Фамилия продюсера */}
 							<div className={styles.formGroup}>
 								<label htmlFor="productionName" className={styles.label}>
 									Имя Фамилия продюсера *
@@ -707,7 +780,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								/>
 							</div>
 
-							{/* 3. Продакшн / Компания */}
+							{/* 2. Продакшн / Компания */}
 							<div className={styles.formGroup}>
 								<label htmlFor="productionCompany" className={styles.label}>
 									Продакшн / Компания *
@@ -723,7 +796,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								/>
 							</div>
 
-							{/* 4. Описание */}
+							{/* 3. Описание */}
 							<div className={styles.formGroup}>
 								<label htmlFor="productionDescription" className={styles.label}>
 									Описание
@@ -738,7 +811,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								/>
 							</div>
 
-							{/* 5. Город */}
+							{/* 4. Город */}
 							<div className={styles.formGroup}>
 								<label htmlFor="productionCity" className={styles.label}>
 									Город
@@ -753,7 +826,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								/>
 							</div>
 
-							{/* 6. Сайт */}
+							{/* 5. Сайт */}
 							<div className={styles.formGroup}>
 								<label htmlFor="productionWebsite" className={styles.label}>
 									Сайт
@@ -805,25 +878,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 					{/* Producer Form */}
 					{role === UserRole.Producer && (
 						<>
-							{/* 1. Код инвайта */}
-							<div className={styles.formGroup}>
-								<label htmlFor="producerInviteCode" className={styles.label}>
-									Код приглашения
-								</label>
-								<input
-									id="producerInviteCode"
-									type="text"
-									value={inviteCode}
-									onChange={handleInviteCodeChange}
-									className={styles.input}
-									placeholder="Введите код приглашения (если есть)"
-								/>
-								<p className={styles.helpText}>
-									Код приглашения автоматически определит вашу роль
-								</p>
-							</div>
-
-							{/* 2. Имя Фамилия продюсера */}
+							{/* 1. Имя Фамилия продюсера */}
 							<div className={styles.formGroup}>
 								<label htmlFor="producerName" className={styles.label}>
 									Имя Фамилия продюсера *
@@ -839,7 +894,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								/>
 							</div>
 
-							{/* 3. Продакшн / Компания */}
+							{/* 2. Продакшн / Компания */}
 							<div className={styles.formGroup}>
 								<label htmlFor="company" className={styles.label}>
 									Продакшн / Компания *
@@ -855,7 +910,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								/>
 							</div>
 
-							{/* 4. Описание */}
+							{/* 3. Описание */}
 							<div className={styles.formGroup}>
 								<label htmlFor="description" className={styles.label}>
 									Описание
@@ -870,7 +925,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								/>
 							</div>
 
-							{/* 5. Город */}
+							{/* 4. Город */}
 							<div className={styles.formGroup}>
 								<label htmlFor="producerCity" className={styles.label}>
 									Город
@@ -885,7 +940,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								/>
 							</div>
 
-							{/* 6. Сайт */}
+							{/* 5. Сайт */}
 							<div className={styles.formGroup}>
 								<label htmlFor="website" className={styles.label}>
 									Сайт

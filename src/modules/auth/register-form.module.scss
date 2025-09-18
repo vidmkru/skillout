@@ -319,6 +319,7 @@
 	.helpText {
 		font-size: 0.8rem;
 	}
+
 }
 
 // Very small screens
@@ -348,6 +349,7 @@
 	.checkboxLabel {
 		padding: 6px 10px;
 	}
+
 }
 
 .helpText {
@@ -481,6 +483,11 @@
 	height: 18px;
 	accent-color: #667eea;
 	cursor: pointer;
+}
+
+// Other field styles
+.otherField {
+	margin-top: 12px;
 }
 
 // Role buttons and checkbox grid styles are now handled in the main media queries above
