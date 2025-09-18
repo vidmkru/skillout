@@ -3,6 +3,7 @@ import { useSetAtom, useAtomValue } from 'jotai'
 import { userAtom, setUserAtom, setLoadingAtom, logoutAtom } from '../atoms/userAtom'
 import { axiosInstance } from '../api'
 import type { LoginRequest, RegisterRequest, AuthResponse } from '../types/database'
+import { UserRole, SubscriptionTier } from '../types/enums'
 
 export function useAuth() {
 	const setUser = useSetAtom(setUserAtom)
@@ -22,11 +23,11 @@ export function useAuth() {
 				const mockUser = {
 					id: email === 'admin@skillout.com' ? 'admin-1' : email === 'producer@skillout.com' ? 'producer-1' : 'creator-1',
 					email: email,
-					role: email === 'admin@skillout.com' ? 'admin' as any : email === 'producer@skillout.com' ? 'producer' as any : 'creator' as any,
+					role: email === 'admin@skillout.com' ? UserRole.Admin : email === 'producer@skillout.com' ? UserRole.Producer : UserRole.Creator,
 					createdAt: new Date().toISOString(),
 					updatedAt: new Date().toISOString(),
 					isVerified: true,
-					subscriptionTier: email === 'producer@skillout.com' ? 'producer' as any : 'free' as any,
+					subscriptionTier: email === 'producer@skillout.com' ? SubscriptionTier.Producer : SubscriptionTier.Free,
 					inviteQuota: { creator: 5, creatorPro: 3, producer: 2 },
 					invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
 					invitesCreated: [],
