@@ -52,6 +52,34 @@ export default function LoginPage() {
 					Введите ваш email для входа в систему
 				</p>
 
+				{/* Test users info */}
+				<div className={styles.testUsers}>
+					<p className={styles.testUsersTitle}>Тестовые пользователи для локальной разработки:</p>
+					<div className={styles.testUsersList}>
+						<button
+							type="button"
+							onClick={() => setEmail('test@skillout.com')}
+							className={styles.testUserButton}
+						>
+							test@skillout.com (Creator)
+						</button>
+						<button
+							type="button"
+							onClick={() => setEmail('admin@skillout.com')}
+							className={styles.testUserButton}
+						>
+							admin@skillout.com (Admin)
+						</button>
+						<button
+							type="button"
+							onClick={() => setEmail('producer@skillout.com')}
+							className={styles.testUserButton}
+						>
+							producer@skillout.com (Producer)
+						</button>
+					</div>
+				</div>
+
 				<form onSubmit={handleSubmit} className={styles.formContent}>
 					<Input
 						type="email"
