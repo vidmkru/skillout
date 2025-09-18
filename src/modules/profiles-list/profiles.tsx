@@ -1,5 +1,5 @@
 "use client"
-import { FC, useEffect, useState, useCallback, useMemo } from 'react'
+import { FC, useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import classNames from 'classnames'
 import { useRouter } from 'next/navigation'
 
@@ -91,6 +91,9 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		withPortfolio: false
 	})
 	const [showFilters, setShowFilters] = useState(false)
+
+	// Ref to store the latest fetchProfiles function
+	const fetchProfilesRef = useRef<typeof fetchProfiles>()
 
 	// Mock profiles data
 	const mockProfiles = useMemo((): CreatorProfile[] => [
@@ -355,35 +358,47 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		}
 	}, [filters, mockProfiles, buildQueryParams])
 
+	// Update ref when fetchProfiles changes
 	useEffect(() => {
-		fetchProfiles()
+		fetchProfilesRef.current = fetchProfiles
 	}, [fetchProfiles])
 
-	// Auto-apply search filter with debounce
 	useEffect(() => {
-		const timeoutId = setTimeout(() => {
+		if (fetchProfilesRef.current) {
+			fetchProfilesRef.current()
+		}
+	}, [])
+
+	// Auto-apply all filters with smart debounce
+	useEffect(() => {
+		// Check if any text-based filters changed (need debounce)
+		const textFiltersChanged = filters.search !== '' || filters.city !== ''
+
+		// Check if any immediate filters changed (no debounce needed)
+		const immediateFiltersChanged = filters.skills.length > 0 ||
+			filters.programs.length > 0 ||
+			filters.experience !== '' ||
+			filters.hackathon !== null ||
+			filters.withPortfolio
+
+		if (immediateFiltersChanged) {
+			// Apply immediately for checkboxes/selects
 			setPage(1)
-			fetchProfiles(1)
-		}, 500) // 500ms debounce
+			if (fetchProfilesRef.current) {
+				fetchProfilesRef.current(1)
+			}
+		} else if (textFiltersChanged) {
+			// Apply with debounce for text inputs
+			const timeoutId = setTimeout(() => {
+				setPage(1)
+				if (fetchProfilesRef.current) {
+					fetchProfilesRef.current(1)
+				}
+			}, 500)
 
-		return () => clearTimeout(timeoutId)
-	}, [filters.search, fetchProfiles])
-
-	// Auto-apply other filters immediately
-	useEffect(() => {
-		setPage(1)
-		fetchProfiles(1)
-	}, [filters.skills, filters.programs, filters.experience, filters.hackathon, filters.withPortfolio, fetchProfiles])
-
-	// Auto-apply city filter with debounce
-	useEffect(() => {
-		const timeoutId = setTimeout(() => {
-			setPage(1)
-			fetchProfiles(1)
-		}, 500) // 500ms debounce
-
-		return () => clearTimeout(timeoutId)
-	}, [filters.city, fetchProfiles])
+			return () => clearTimeout(timeoutId)
+		}
+	}, [filters.search, filters.city, filters.skills, filters.programs, filters.experience, filters.hackathon, filters.withPortfolio])
 
 	const loadMore = () => {
 		if (!loading && hasMore) {
@@ -436,11 +451,6 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		setFilters(prev => ({ ...prev, withPortfolio: e.target.checked }))
 	}
 
-	const applyFilters = () => {
-		setPage(1)
-		fetchProfiles(1)
-	}
-
 	const clearFilters = () => {
 		setFilters({
 			search: '',
@@ -452,7 +462,9 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 			withPortfolio: false
 		})
 		setPage(1)
-		fetchProfiles(1)
+		if (fetchProfilesRef.current) {
+			fetchProfilesRef.current(1)
+		}
 	}
 
 	const handleProfileClick = (id: string) => {
@@ -595,9 +607,6 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 							</div>
 
 							<div className={styles.filterActions}>
-								<button onClick={applyFilters} className={styles.applyButton}>
-									Применить фильтры
-								</button>
 								<button onClick={clearFilters} className={styles.clearButton}>
 									Очистить фильтры
 								</button>
