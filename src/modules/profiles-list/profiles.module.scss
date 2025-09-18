@@ -275,3 +275,189 @@
 		padding: func.rem(16);
 	}
 }
+
+// Filter styles
+.searchControls {
+	margin-bottom: func.rem(32);
+}
+
+.searchBar {
+	display: flex;
+	gap: func.rem(16);
+	margin-bottom: func.rem(20);
+	align-items: center;
+}
+
+.searchInput {
+	flex: 1;
+	padding: func.rem(12) func.rem(16);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: func.rem(8);
+	background: rgba(255, 255, 255, 0.05);
+	color: white;
+	font-size: func.rem(14);
+
+	&::placeholder {
+		color: rgba(255, 255, 255, 0.5);
+	}
+
+	&:focus {
+		outline: none;
+		border-color: var(--color-accent);
+	}
+}
+
+.filterToggle {
+	padding: func.rem(12) func.rem(20);
+	background: rgba(102, 126, 234, 0.1);
+	border: 1px solid rgba(102, 126, 234, 0.3);
+	color: var(--color-accent);
+	border-radius: func.rem(8);
+	font-size: func.rem(14);
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+
+	&:hover {
+		background: rgba(102, 126, 234, 0.2);
+		border-color: var(--color-accent);
+	}
+}
+
+.filtersPanel {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: func.rem(12);
+	padding: func.rem(24);
+}
+
+.filtersGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(func.rem(300), 1fr));
+	gap: func.rem(24);
+	margin-bottom: func.rem(24);
+}
+
+.filterGroup {
+	display: flex;
+	flex-direction: column;
+	gap: func.rem(12);
+}
+
+.filterLabel {
+	color: white;
+	font-weight: 600;
+	font-size: func.rem(14);
+}
+
+.checkboxGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(func.rem(200), 1fr));
+	gap: func.rem(8);
+}
+
+.checkboxList {
+	display: flex;
+	flex-direction: column;
+	gap: func.rem(8);
+}
+
+.checkboxLabel {
+	display: flex;
+	align-items: center;
+	gap: func.rem(8);
+	color: rgba(255, 255, 255, 0.8);
+	font-size: func.rem(13);
+	cursor: pointer;
+
+	&:hover {
+		color: white;
+	}
+}
+
+.checkbox {
+	width: func.rem(16);
+	height: func.rem(16);
+	accent-color: var(--color-accent);
+}
+
+.select, .input {
+	padding: func.rem(10) func.rem(12);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: func.rem(6);
+	background: rgba(255, 255, 255, 0.05);
+	color: white;
+	font-size: func.rem(14);
+
+	&:focus {
+		outline: none;
+		border-color: var(--color-accent);
+	}
+}
+
+.select {
+	cursor: pointer;
+}
+
+.filterActions {
+	display: flex;
+	gap: func.rem(12);
+	justify-content: center;
+}
+
+.applyButton, .clearButton {
+	padding: func.rem(12) func.rem(24);
+	border-radius: func.rem(8);
+	font-size: func.rem(14);
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.applyButton {
+	background: var(--color-accent);
+	color: white;
+	border: none;
+
+	&:hover {
+		background: color-mix(in srgb, var(--color-accent) 80%, black);
+	}
+}
+
+.clearButton {
+	background: transparent;
+	color: rgba(255, 255, 255, 0.7);
+	border: 1px solid rgba(255, 255, 255, 0.3);
+
+	&:hover {
+		color: white;
+		border-color: rgba(255, 255, 255, 0.5);
+	}
+}
+
+// Responsive filter styles
+@include mixins.tablet {
+	.filtersGrid {
+		grid-template-columns: 1fr;
+		gap: func.rem(20);
+	}
+
+	.searchBar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.filterActions {
+		flex-direction: column;
+	}
+}
+
+@include mixins.tablet-small {
+	.filtersPanel {
+		padding: func.rem(16);
+	}
+
+	.checkboxGrid {
+		grid-template-columns: 1fr;
+	}
+}

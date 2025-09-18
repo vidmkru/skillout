@@ -222,3 +222,43 @@
 		font-size: rem(14);
 	}
 }
+
+// Test users styles
+.testUsers {
+	margin-bottom: rem(24);
+	padding: rem(16);
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: rem(12);
+}
+
+.testUsersTitle {
+	font-size: rem(14);
+	font-weight: 600;
+	color: var(--color-text-primary);
+	margin-bottom: rem(12);
+}
+
+.testUsersList {
+	display: flex;
+	flex-direction: column;
+	gap: rem(8);
+}
+
+.testUserButton {
+	background: rgba(102, 126, 234, 0.1);
+	border: 1px solid rgba(102, 126, 234, 0.3);
+	color: var(--color-accent);
+	padding: rem(8) rem(12);
+	border-radius: rem(8);
+	font-size: rem(12);
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	text-align: left;
+
+	&:hover {
+		background: rgba(102, 126, 234, 0.2);
+		border-color: var(--color-accent);
+	}
+}
