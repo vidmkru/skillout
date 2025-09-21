@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 
-import type { CreatorProfile, ApiResponse, PaginatedResponse } from '@/shared/types/database'
+import type { ProductionProfile, ApiResponse, PaginatedResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 			search, specialization, userType, skills, programs, experience, hackathon, city, withPortfolio
 		})
 
-		let profiles: CreatorProfile[] = []
+		let profiles: ProductionProfile[] = []
 
 		// Load profiles from Redis only
 		try {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 		console.log('🔍 Profiles API: Total profiles before filtering:', profiles.length)
 
 		// Apply filters
-		const filteredProfiles = profiles.filter((profile: CreatorProfile) => {
+		const filteredProfiles = profiles.filter((profile: ProductionProfile) => {
 			// User type filter
 			const matchesUserType = (() => {
 				if (userType === 'creators') {
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
 
 		console.log('🔍 Profiles API: Paginated profiles:', paginatedProfiles.length)
 
-		const paginatedResponse: PaginatedResponse<CreatorProfile> = {
+		const paginatedResponse: PaginatedResponse<ProductionProfile> = {
 			items: paginatedProfiles,
 			page,
 			limit,
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
 		console.log('✅ Profiles API: Returning response with', paginatedProfiles.length, 'profiles')
 		console.log('🔍 Profiles API: Full response data:', JSON.stringify(paginatedResponse, null, 2))
 
-		return NextResponse.json<ApiResponse<PaginatedResponse<CreatorProfile>>>({
+		return NextResponse.json<ApiResponse<PaginatedResponse<ProductionProfile>>>({
 			success: true,
 			data: paginatedResponse
 		})

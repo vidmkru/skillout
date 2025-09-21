@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Wrapper, Heading, Button, Input } from '@/ui'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { axiosInstance } from '@/shared/api'
-import type { CreatorProfile } from '@/shared/types/database'
+import type { ProductionProfile } from '@/shared/types/database'
 import { ExperienceLevel } from '@/shared/types/enums'
 import classNames from 'classnames'
 
@@ -19,7 +19,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ className }) => {
 	const router = useRouter()
 	const { user, isAuthenticated } = useAuth()
 
-	const [profile, setProfile] = useState<CreatorProfile | null>(null)
+	const [, setProfile] = useState<ProductionProfile | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -171,7 +171,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ className }) => {
 	}, [fetchProfile])
 
 	// Handle form field changes
-	const handleInputChange = (field: string, value: any) => {
+	const handleInputChange = (field: string, value: string | boolean | string[]) => {
 		setFormData(prev => ({
 			...prev,
 			[field]: value

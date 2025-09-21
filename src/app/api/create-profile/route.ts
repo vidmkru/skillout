@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { ExperienceLevel } from '@/shared/types/enums'
-import type { CreatorProfile, ApiResponse } from '@/shared/types/database'
+import type { ProductionProfile, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 		const now = new Date().toISOString()
 
 		// Create profile
-		const profile: CreatorProfile = {
+		const profile: ProductionProfile = {
 			id: userId,
 			userId: userId,
 			name: name,
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 		await db.setProfile(userId, profile)
 		console.log(`✅ Profile created for user ${userId}: ${name}`)
 
-		return NextResponse.json<ApiResponse<{ profile: CreatorProfile }>>({
+		return NextResponse.json<ApiResponse<{ profile: ProductionProfile }>>({
 			success: true,
 			data: { profile },
 			message: 'Profile created successfully'

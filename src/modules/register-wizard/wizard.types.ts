@@ -2,7 +2,7 @@ export interface RegisterWizardProps {
 	className?: string
 }
 
-export interface CreatorProfileInput {
+export interface ProductionProfileInput {
 	name: string
 	about?: string
 	specialization: string[]

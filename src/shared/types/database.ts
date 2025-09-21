@@ -26,7 +26,7 @@ export interface Session {
 }
 
 // Profile interface for creators
-export interface CreatorProfile {
+export interface ProductionProfile {
 	id: string
 	userId: string
 	name: string

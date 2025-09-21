@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
-import type { CreatorProfile, ApiResponse } from '@/shared/types/database'
+import type { ProductionProfile, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,32 +14,18 @@ export async function GET(
 
 		const userId = params.id
 
-		// Get all profiles from Redis
-		const profiles = await db.lrange('profiles', 0, -1)
-		console.log('🔍 Get User Profile API: Found profiles:', profiles.length)
-
-		// Find profile by userId
-		const profileData = profiles.find((profileStr: string) => {
-			try {
-				const profile = JSON.parse(profileStr) as CreatorProfile
-				return profile.userId === userId
-			} catch {
-				return false
-			}
-		})
-
-		if (!profileData) {
+		// Get profile by userId from Redis
+		const profile = await db.getProfile(userId)
+		if (!profile) {
 			console.log('❌ Get User Profile API: Profile not found for user:', userId)
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
 				message: 'Profile not found'
 			}, { status: 404 })
 		}
-
-		const profile = JSON.parse(profileData) as CreatorProfile
 		console.log('✅ Get User Profile API: Profile found:', profile.id)
 
-		return NextResponse.json<ApiResponse<CreatorProfile>>({
+		return NextResponse.json<ApiResponse<ProductionProfile>>({
 			success: true,
 			data: profile
 		})
@@ -64,21 +50,9 @@ export async function PUT(
 		const userId = params.id
 		const updateData = await request.json()
 
-		// Get all profiles from Redis
-		const profiles = await db.lrange('profiles', 0, -1)
-		console.log('📝 Update User Profile API: Found profiles:', profiles.length)
-
-		// Find profile by userId
-		const profileIndex = profiles.findIndex((profileStr: string) => {
-			try {
-				const profile = JSON.parse(profileStr) as CreatorProfile
-				return profile.userId === userId
-			} catch {
-				return false
-			}
-		})
-
-		if (profileIndex === -1) {
+		// Get existing profile from Redis
+		const existingProfile = await db.getProfile(userId)
+		if (!existingProfile) {
 			console.log('❌ Update User Profile API: Profile not found for user:', userId)
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
@@ -86,22 +60,19 @@ export async function PUT(
 			}, { status: 404 })
 		}
 
-		// Parse existing profile
-		const existingProfile = JSON.parse(profiles[profileIndex]) as CreatorProfile
-
 		// Update profile with new data
-		const updatedProfile: CreatorProfile = {
+		const updatedProfile: ProductionProfile = {
 			...existingProfile,
 			...updateData,
 			updatedAt: new Date().toISOString()
 		}
 
 		// Update the profile in Redis
-		await db.lset('profiles', profileIndex, JSON.stringify(updatedProfile))
+		await db.setProfile(userId, updatedProfile)
 
 		console.log('✅ Update User Profile API: Profile updated:', updatedProfile.id)
 
-		return NextResponse.json<ApiResponse<CreatorProfile>>({
+		return NextResponse.json<ApiResponse<ProductionProfile>>({
 			success: true,
 			data: updatedProfile,
 			message: 'Profile updated successfully'

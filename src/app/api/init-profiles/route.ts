@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { ExperienceLevel } from '@/shared/types/enums'
-import type { CreatorProfile, ApiResponse } from '@/shared/types/database'
+import type { ProductionProfile, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +11,7 @@ export async function POST() {
 		const now = new Date().toISOString()
 
 		// Create creator profiles
-		const productionfiles: CreatorProfile[] = [
+		const productionfiles: ProductionProfile[] = [
 			{
 				id: 'user-1',
 				userId: 'user-1',

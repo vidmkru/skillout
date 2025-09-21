@@ -6,7 +6,7 @@ export function getBaseQuota(role: UserRole) {
 	switch (role) {
 		case UserRole.Admin:
 			return { creator: 1000, production: 500, producer: 2000 }
-		case UserRole.CreatorPro:
+		case UserRole.Production:
 			return { creator: 10, production: 2, producer: 20 }
 		case UserRole.Creator:
 			return { creator: 2, production: 0, producer: 5 }
@@ -94,7 +94,7 @@ export function getTypeKey(type: InviteType): 'creator' | 'production' | 'produc
 	switch (type) {
 		case InviteType.Creator:
 			return 'creator'
-		case InviteType.CreatorPro:
+		case InviteType.Production:
 			return 'production'
 		case InviteType.Producer:
 			return 'producer'

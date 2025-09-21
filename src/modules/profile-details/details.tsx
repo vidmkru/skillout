@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation'
 import { Wrapper, Heading, Button } from '@/ui'
 import { axiosInstance } from '@/shared/api'
 import { useAuth } from '@/shared/hooks/useAuth'
-import type { CreatorProfile } from '@/shared/types/database'
+import type { ProductionProfile } from '@/shared/types/database'
 import { UserRole } from '@/shared/types/enums'
 import Image from 'next/image'
 
@@ -23,7 +23,7 @@ const ProfileDetails: FC<ProfileDetailsProps> = ({ className, id }) => {
 	const profileId = id || params.id as string
 	const { user, isAuthenticated } = useAuth()
 
-	const [profile, setProfile] = useState<CreatorProfile | null>(null)
+	const [profile, setProfile] = useState<ProductionProfile | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
@@ -31,7 +31,7 @@ const ProfileDetails: FC<ProfileDetailsProps> = ({ className, id }) => {
 		try {
 			console.log('🔍 ProfileDetails: Fetching profile for ID:', profileId)
 			setLoading(true)
-			const response = await axiosInstance.get<{ success: boolean; data: CreatorProfile }>(
+			const response = await axiosInstance.get<{ success: boolean; data: ProductionProfile }>(
 				`/api/profiles/${profileId}`
 			)
 

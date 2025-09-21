@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
-import type { CreatorProfile, ApiResponse } from '@/shared/types/database'
+import type { ProductionProfile, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +24,7 @@ export async function GET(
 
 		console.log('✅ Profile API: Profile found:', profile.name, 'ID:', profile.id)
 
-		return NextResponse.json<ApiResponse<CreatorProfile>>({
+		return NextResponse.json<ApiResponse<ProductionProfile>>({
 			success: true,
 			data: profile
 		})
@@ -80,7 +80,7 @@ export async function PUT(
 		}
 
 		// Update profile
-		const updatedProfile: CreatorProfile = {
+		const updatedProfile: ProductionProfile = {
 			...existingProfile,
 			...body,
 			updatedAt: new Date().toISOString()
@@ -89,7 +89,7 @@ export async function PUT(
 		// Save to Redis
 		await db.setProfile(id, updatedProfile)
 
-		return NextResponse.json<ApiResponse<CreatorProfile>>({
+		return NextResponse.json<ApiResponse<ProductionProfile>>({
 			success: true,
 			message: 'Profile updated successfully',
 			data: updatedProfile

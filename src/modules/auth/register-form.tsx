@@ -207,7 +207,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 		}
 
 		// Validate producer and production-specific fields
-		if (role === UserRole.Producer || role === UserRole.CreatorPro) {
+		if (role === UserRole.Producer || role === UserRole.Production) {
 			if (!producerName.trim()) {
 				setError('Имя Фамилия продюсера обязательны')
 				setLoading(false)
@@ -251,7 +251,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 			}
 
 			// Add producer and production-specific fields
-			if (role === UserRole.Producer || role === UserRole.CreatorPro) {
+			if (role === UserRole.Producer || role === UserRole.Production) {
 				requestData.name = producerName
 				requestData.company = company
 				requestData.description = description
@@ -355,14 +355,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 							<button
 								type="button"
 								onClick={() => {
-									const newRole = UserRole.CreatorPro
+									const newRole = UserRole.Production
 									setRole(newRole)
 									// Show error if no invite code
 									if (!inviteCode.trim()) {
 										setError('Код приглашения обязателен для регистрации')
 									}
 								}}
-								className={`${styles.roleButton} ${role === UserRole.CreatorPro ? styles.roleButtonActive : ''}`}
+								className={`${styles.roleButton} ${role === UserRole.Production ? styles.roleButtonActive : ''}`}
 							>
 								<div className={styles.roleButtonContent}>
 									<div className={styles.roleButtonTitle}>Продакшн</div>
@@ -762,7 +762,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 					)}
 
 					{/* Production Form (same as Producer) */}
-					{role === UserRole.CreatorPro && (
+					{role === UserRole.Production && (
 						<>
 							{/* 1. Имя Фамилия продюсера */}
 							<div className={styles.formGroup}>

@@ -105,7 +105,7 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 	}, [fetchInvites])
 
 	// Check if user can create invites
-	if (!user || (user.role !== UserRole.Creator && user.role !== UserRole.CreatorPro && user.role !== UserRole.Admin)) {
+	if (!user || (user.role !== UserRole.Creator && user.role !== UserRole.Production && user.role !== UserRole.Admin)) {
 		return (
 			<div className={styles.container}>
 				<div className={styles.error}>
@@ -121,7 +121,7 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 		switch (type) {
 			case InviteType.Creator:
 				return 'creator'
-			case InviteType.CreatorPro:
+			case InviteType.Production:
 				return 'production'
 			case InviteType.Producer:
 				return 'producer'
@@ -242,7 +242,7 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 		switch (type) {
 			case InviteType.Creator:
 				return 'Креатор'
-			case InviteType.CreatorPro:
+			case InviteType.Production:
 				return 'Креатор Pro'
 			case InviteType.Producer:
 				return 'Продюсер'
@@ -255,7 +255,7 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 		switch (type) {
 			case InviteType.Creator:
 				return '#3742fa'
-			case InviteType.CreatorPro:
+			case InviteType.Production:
 				return '#2ed573'
 			case InviteType.Producer:
 				return '#ffa502'
@@ -393,7 +393,7 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 							}}
 						>
 							<option value={InviteType.Creator}>Креатор</option>
-							<option value={InviteType.CreatorPro}>Креатор Pro</option>
+							<option value={InviteType.Production}>Креатор Pro</option>
 							<option value={InviteType.Producer}>Продюсер</option>
 						</select>
 					</div>

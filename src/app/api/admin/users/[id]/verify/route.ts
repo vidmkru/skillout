@@ -22,16 +22,14 @@ export async function PUT(
 		}
 
 		// Get user from Redis
-		const userData = await db.getUser(userId)
-		if (!userData) {
+		const user = await db.getUser(userId)
+		if (!user) {
 			console.log('❌ Admin Verify User API: User not found:', userId)
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
 				message: 'User not found'
 			}, { status: 404 })
 		}
-
-		const user = JSON.parse(userData) as User
 
 		// Update user verification status
 		const updatedUser: User = {

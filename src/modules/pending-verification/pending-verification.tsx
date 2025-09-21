@@ -98,7 +98,6 @@ export const PendingVerification: React.FC<PendingVerificationProps> = ({ classN
 
 						<Button
 							onClick={handleLogout}
-							variant="secondary"
 							className={styles.logoutButton}
 						>
 							Выйти

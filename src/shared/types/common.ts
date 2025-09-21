@@ -6,7 +6,7 @@ export interface BaseEntity {
 	updatedAt?: string
 }
 
-export interface CreatorProfile extends BaseEntity {
+export interface ProductionProfile extends BaseEntity {
 	name: string
 	about?: string
 	specialization: string[]

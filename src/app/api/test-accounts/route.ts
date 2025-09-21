@@ -28,7 +28,7 @@ export async function POST() {
 				switch (userRole) {
 					case UserRole.Admin:
 						return { creator: 50, production: 20, producer: 100 }
-					case UserRole.CreatorPro:
+					case UserRole.Production:
 						return { creator: 5, production: 2, producer: 10 }
 					case UserRole.Creator:
 						return { creator: 2, production: 0, producer: 5 }

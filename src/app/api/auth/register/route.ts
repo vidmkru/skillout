@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { UserRole, SubscriptionTier, ExperienceLevel } from '@/shared/types/enums'
 import { setFallbackUser, setFallbackSession } from '@/shared/db/fallback'
-import type { User, Session, ApiResponse, Invite, CreatorProfile } from '@/shared/types/database'
+import type { User, Session, ApiResponse, Invite, ProductionProfile } from '@/shared/types/database'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 			}, { status: 400 })
 		}
 
-		// Check if invite code is required for creators (only Creator needs invite, CreatorPro can register freely)
+		// Check if invite code is required for creators (only Creator needs invite, Production can register freely)
 		if (role === UserRole.Creator && !inviteCode) {
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 			switch (userRole) {
 				case UserRole.Admin:
 					return { creator: 1000, production: 500, producer: 2000 }
-				case UserRole.CreatorPro:
+				case UserRole.Production:
 					return { creator: 10, production: 2, producer: 20 }
 				case UserRole.Creator:
 					return { creator: 2, production: 0, producer: 5 }
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
 			createdAt: now,
 			updatedAt: now,
 			isVerified: false, // New users need admin verification
-			subscriptionTier: role === UserRole.CreatorPro ? SubscriptionTier.CreatorPro : SubscriptionTier.Free,
+			subscriptionTier: role === UserRole.Production ? SubscriptionTier.Production : SubscriptionTier.Free,
 			inviteQuota: getInitialQuota(role),
 			invitesUsed: { creator: 0, production: 0, producer: 0 },
 			invitesCreated: [],
@@ -140,9 +140,9 @@ export async function POST(request: NextRequest) {
 			setFallbackUser(userId, newUser)
 		}
 
-		// Create profile for creators (Creator and CreatorPro roles)
-		if (role === UserRole.Creator || role === UserRole.CreatorPro) {
-			const productionfile: CreatorProfile = {
+		// Create profile for creators (Creator and Production roles)
+		if (role === UserRole.Creator || role === UserRole.Production) {
+			const productionfile: ProductionProfile = {
 				id: userId,
 				userId: userId,
 				name: name || email.split('@')[0], // Use provided name or email prefix
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
 					linkedin: ''
 				},
 				isPublic: true,
-				isPro: role === UserRole.CreatorPro,
+				isPro: role === UserRole.Production,
 				createdAt: now,
 				updatedAt: now
 			}

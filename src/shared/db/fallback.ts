@@ -1,4 +1,4 @@
-import type { User, Session, CreatorProfile, Invite, Rating, Subscription, AdminSettings } from '../types/database'
+import type { User, Session, ProductionProfile, Invite, Rating, Subscription, AdminSettings } from '../types/database'
 import { UserRole, SubscriptionTier, ExperienceLevel } from '../types/enums'
 
 // Fallback storage for when Redis is unavailable
@@ -9,7 +9,7 @@ declare global {
 	// eslint-disable-next-line no-var
 	var __fallbackSessions: Map<string, Session> | undefined
 	// eslint-disable-next-line no-var
-	var __fallbackProfiles: Map<string, CreatorProfile> | undefined
+	var __fallbackProfiles: Map<string, ProductionProfile> | undefined
 	// eslint-disable-next-line no-var
 	var __fallbackInvites: Map<string, Invite> | undefined
 	// eslint-disable-next-line no-var
@@ -20,7 +20,7 @@ declare global {
 
 export const fallbackUsers = globalThis.__fallbackUsers || (globalThis.__fallbackUsers = new Map<string, User>())
 export const fallbackSessions = globalThis.__fallbackSessions || (globalThis.__fallbackSessions = new Map<string, Session>())
-export const fallbackProfiles = globalThis.__fallbackProfiles || (globalThis.__fallbackProfiles = new Map<string, CreatorProfile>())
+export const fallbackProfiles = globalThis.__fallbackProfiles || (globalThis.__fallbackProfiles = new Map<string, ProductionProfile>())
 export const fallbackInvites = globalThis.__fallbackInvites || (globalThis.__fallbackInvites = new Map<string, Invite>())
 export const fallbackRatings = globalThis.__fallbackRatings || (globalThis.__fallbackRatings = new Map<string, Rating>())
 export const fallbackSubscriptions = globalThis.__fallbackSubscriptions || (globalThis.__fallbackSubscriptions = new Map<string, Subscription>())
@@ -45,7 +45,7 @@ const testUsers: User[] = [
 ]
 
 // No profiles in fallback - all profiles will be loaded from Redis
-const productionfiles: CreatorProfile[] = []
+const productionfiles: ProductionProfile[] = []
 
 // Initialize fallback data only once
 let isInitialized = false
@@ -111,7 +111,7 @@ const testAdminSession = {
 fallbackSessions.set(testAdminSession.id, testAdminSession)
 
 // Add creator profiles to fallback storage
-productionfiles.forEach((profile: CreatorProfile) => {
+productionfiles.forEach((profile: ProductionProfile) => {
 	fallbackProfiles.set(profile.id, profile)
 })
 
@@ -223,7 +223,7 @@ export function deleteFallbackUser(id: string): void {
 }
 
 // Profile management functions
-export function createCreatorProfile(userId: string, profileData: {
+export function createProductionProfile(userId: string, profileData: {
 	name: string
 	bio: string
 	specialization: string[]
@@ -239,7 +239,7 @@ export function createCreatorProfile(userId: string, profileData: {
 	const user = getFallbackUser(userId)
 	if (!user) return
 
-	const profile: CreatorProfile = {
+	const profile: ProductionProfile = {
 		id: userId,
 		userId: userId,
 		name: profileData.name,
@@ -256,7 +256,7 @@ export function createCreatorProfile(userId: string, profileData: {
 		badges: [],
 		contacts: profileData.contacts,
 		isPublic: true,
-		isPro: user.role === UserRole.CreatorPro,
+		isPro: user.role === UserRole.Production,
 		createdAt: new Date().toISOString(),
 		updatedAt: new Date().toISOString()
 	}
@@ -264,6 +264,6 @@ export function createCreatorProfile(userId: string, profileData: {
 	fallbackProfiles.set(userId, profile)
 }
 
-export function setFallbackProfile(id: string, profile: CreatorProfile): void {
+export function setFallbackProfile(id: string, profile: ProductionProfile): void {
 	fallbackProfiles.set(id, profile)
 }

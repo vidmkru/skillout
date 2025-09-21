@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
-import type { ApiResponse, CreatorProfile, User } from '@/shared/types/database'
+import type { ApiResponse, ProductionProfile, User } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 		return NextResponse.json<ApiResponse<{
 			hasProfile: boolean
 			hasUser: boolean
-			profile: CreatorProfile | null
+			profile: ProductionProfile | null
 			user: User | null
 		}>>({
 			success: true,

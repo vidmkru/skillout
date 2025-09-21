@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { UserRole, SubscriptionTier, ExperienceLevel } from '@/shared/types/enums'
-import type { User, CreatorProfile, ApiResponse } from '@/shared/types/database'
+import type { User, ProductionProfile, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,11 +28,11 @@ export async function POST() {
 			{
 				id: 'user-1',
 				email: 'alexey@example.com',
-				role: UserRole.CreatorPro,
+				role: UserRole.Production,
 				createdAt: now,
 				updatedAt: now,
 				isVerified: true,
-				subscriptionTier: SubscriptionTier.CreatorPro,
+				subscriptionTier: SubscriptionTier.Production,
 				inviteQuota: { creator: 10, production: 2, producer: 20 },
 				invitesUsed: { creator: 0, production: 0, producer: 0 },
 				invitesCreated: [],
@@ -41,11 +41,11 @@ export async function POST() {
 			{
 				id: 'user-2',
 				email: 'maria@example.com',
-				role: UserRole.CreatorPro,
+				role: UserRole.Production,
 				createdAt: now,
 				updatedAt: now,
 				isVerified: true,
-				subscriptionTier: SubscriptionTier.CreatorPro,
+				subscriptionTier: SubscriptionTier.Production,
 				inviteQuota: { creator: 10, production: 2, producer: 20 },
 				invitesUsed: { creator: 0, production: 0, producer: 0 },
 				invitesCreated: [],
@@ -67,7 +67,7 @@ export async function POST() {
 		]
 
 		// Create creator profiles
-		const productionfiles: CreatorProfile[] = [
+		const productionfiles: ProductionProfile[] = [
 			{
 				id: 'user-1',
 				userId: 'user-1',

@@ -5,11 +5,11 @@ import classNames from 'classnames'
 import { Button, Input, Wrapper, Heading } from '@/ui'
 
 import styles from './wizard.module.scss'
-import { CreatorProfileInput, RegisterWizardProps } from './wizard.types'
+import { ProductionProfileInput, RegisterWizardProps } from './wizard.types'
 
 type Step = 0 | 1 | 2 | 3
 
-const defaultData: CreatorProfileInput = {
+const defaultData: ProductionProfileInput = {
 	name: '',
 	about: '',
 	specialization: [],
@@ -26,7 +26,7 @@ const defaultData: CreatorProfileInput = {
 const RegisterWizard: FC<RegisterWizardProps> = ({ className }) => {
 	const rootClassName = classNames(styles.root, className)
 	const [step, setStep] = useState<Step>(0)
-	const [data, setData] = useState<CreatorProfileInput>(defaultData)
+	const [data, setData] = useState<ProductionProfileInput>(defaultData)
 
 	const canNext = useMemo(() => {
 		if (step === 0) return data.name.trim().length > 1
@@ -35,7 +35,7 @@ const RegisterWizard: FC<RegisterWizardProps> = ({ className }) => {
 		return true
 	}, [step, data])
 
-	const set = (patch: Partial<CreatorProfileInput>) => setData((d) => ({ ...d, ...patch }))
+	const set = (patch: Partial<ProductionProfileInput>) => setData((d) => ({ ...d, ...patch }))
 
 	const submit = () => {
 		// placeholder for API call
@@ -80,7 +80,7 @@ const RegisterWizard: FC<RegisterWizardProps> = ({ className }) => {
 						<div>
 							<div className={styles.field}>
 								<label className={styles.label}>Опыт</label>
-								<select value={data.experience} onChange={(e) => set({ experience: e.target.value as CreatorProfileInput['experience'] })}>
+								<select value={data.experience} onChange={(e) => set({ experience: e.target.value as ProductionProfileInput['experience'] })}>
 									<option value="lt1">меньше года</option>
 									<option value="1-2">1-2 года</option>
 									<option value="2+">2+ года</option>

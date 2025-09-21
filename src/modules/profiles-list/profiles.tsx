@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Wrapper, Heading, Button } from '@/ui'
 import { axiosInstance } from '@/shared/api'
 import { useAuth } from '@/shared/hooks/useAuth'
-import type { CreatorProfile, PaginatedResponse } from '@/shared/types/database'
+import type { ProductionProfile, PaginatedResponse } from '@/shared/types/database'
 import { UserRole, ExperienceLevel } from '@/shared/types/enums'
 import Image from 'next/image'
 
@@ -78,7 +78,7 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 
 	// Get user type from URL params (creators, producers, or all)
 	const userType = searchParams.get('type') || 'creators'
-	const [profiles, setProfiles] = useState<CreatorProfile[]>([])
+	const [profiles, setProfiles] = useState<ProductionProfile[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [page, setPage] = useState(1)
@@ -95,7 +95,7 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		withPortfolio: false
 	})
 	const [showFilters, setShowFilters] = useState(false)
-	const [selectedProfile, setSelectedProfile] = useState<CreatorProfile | null>(null)
+	const [selectedProfile, setSelectedProfile] = useState<ProductionProfile | null>(null)
 	const [showModal, setShowModal] = useState(false)
 	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
@@ -103,7 +103,7 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 	const fetchProfilesRef = useRef<typeof fetchProfiles>()
 
 	// Mock profiles data
-	const mockProfiles = useMemo((): CreatorProfile[] => [
+	const mockProfiles = useMemo((): ProductionProfile[] => [
 		{
 			id: 'profile-1',
 			userId: 'user-1',
@@ -285,7 +285,7 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 				await new Promise(resolve => setTimeout(resolve, 500))
 
 				// Apply filters
-				const filteredProfiles = mockProfiles.filter((profile: CreatorProfile) => {
+				const filteredProfiles = mockProfiles.filter((profile: ProductionProfile) => {
 					// User type filter
 					if (userType === 'creators' && profile.isPro) {
 						return false
@@ -361,7 +361,7 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 
 			const queryParams = buildQueryParams(pageNum)
 			console.log('🔍 ProfilesList: API query params:', queryParams)
-			const response = await axiosInstance.get<{ success: boolean; data: PaginatedResponse<CreatorProfile> }>(
+			const response = await axiosInstance.get<{ success: boolean; data: PaginatedResponse<ProductionProfile> }>(
 				`/api/profiles?${queryParams}`
 			)
 
@@ -514,7 +514,7 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		}
 	}
 
-	const handleProfileClick = (profile: CreatorProfile) => {
+	const handleProfileClick = (profile: ProductionProfile) => {
 		setSelectedProfile(profile)
 		setShowModal(true)
 	}

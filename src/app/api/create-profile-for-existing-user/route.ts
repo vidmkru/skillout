@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { ExperienceLevel } from '@/shared/types/enums'
-import type { CreatorProfile, ApiResponse } from '@/shared/types/database'
+import type { ProductionProfile, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +12,7 @@ export async function POST() {
 		const userId = 'user-1756403002448-48pgsrpmh'
 
 		// Create profile for existing user
-		const productionfile: CreatorProfile = {
+		const productionfile: ProductionProfile = {
 			id: userId,
 			userId: userId,
 			name: 'Babijonchik',
@@ -62,7 +62,7 @@ export async function POST() {
 
 		console.log('✅ Profile creation completed')
 
-		return NextResponse.json<ApiResponse<{ profile: CreatorProfile }>>({
+		return NextResponse.json<ApiResponse<{ profile: ProductionProfile }>>({
 			success: true,
 			data: { profile: productionfile },
 			message: 'Profile created successfully for existing user'
