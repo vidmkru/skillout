@@ -73,6 +73,10 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 			setLoading(true)
 			const response = await api.get('/api/admin/users')
 			if (response.data.success) {
+				console.log('🔍 Users loaded from API:', response.data.data.users)
+				response.data.data.users.forEach((user: User) => {
+					console.log('👤 User:', user.email, 'role:', user.role, 'type:', typeof user.role)
+				})
 				setUsers(response.data.data.users)
 			} else {
 				setError('Ошибка загрузки пользователей')
@@ -120,9 +124,9 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 
 	const updateUser = async (userId: string, updates: Partial<User>) => {
 		try {
-			const response = await api.put('/api/admin/users', { userId, updates })
+			const response = await api.put(`/api/admin/users/${userId}`, updates)
 			if (response.data.success) {
-				setUsers(prev => prev.map(u => u.id === userId ? response.data.data.user : u))
+				setUsers(prev => prev.map(u => u.id === userId ? response.data.user : u))
 				setEditingUser(null)
 			} else {
 				setError(response.data.error || 'Ошибка обновления пользователя')
@@ -175,6 +179,26 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 		}
 	}
 
+	const migrateRoles = async () => {
+		if (!confirm('Вы уверены, что хотите выполнить миграцию ролей? Это обновит всех пользователей с старыми ролями.')) return
+
+		try {
+			setLoading(true)
+			const response = await api.post('/api/admin/migrate-roles')
+			if (response.data.success) {
+				alert(`Миграция завершена! Обновлено пользователей: ${response.data.data.migratedCount}`)
+				fetchUsers() // Reload users
+			} else {
+				setError(response.data.message || 'Ошибка миграции ролей')
+			}
+		} catch (error) {
+			console.error('Error migrating roles:', error)
+			setError('Ошибка миграции ролей')
+		} finally {
+			setLoading(false)
+		}
+	}
+
 	// Filter users
 	const filteredUsers = users.filter(user => {
 		const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -184,6 +208,8 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 
 	// Get role display info
 	const getRoleInfo = (role: UserRole) => {
+		console.log('🔍 getRoleInfo called with role:', role, 'type:', typeof role)
+		console.log('🔍 Available UserRole values:', Object.values(UserRole))
 		switch (role) {
 			case UserRole.Admin:
 				return { label: 'Администратор', color: '#ff4757', bgColor: '#ffe0e0' }
@@ -194,6 +220,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 			case UserRole.Producer:
 				return { label: 'Продюсер', color: '#ffa502', bgColor: '#fff0e0' }
 			default:
+				console.log('⚠️ Unknown role:', role, 'falling back to default')
 				return { label: 'Неизвестно', color: '#747d8c', bgColor: '#f0f0f0' }
 		}
 	}
@@ -280,6 +307,13 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 						<option value={UserRole.Producer}>Продюсеры</option>
 					</select>
 				</div>
+				<button
+					onClick={migrateRoles}
+					className={styles.migrateButton}
+					disabled={loading}
+				>
+					Мигрировать роли
+				</button>
 			</div>
 
 			<div className={styles.stats}>
