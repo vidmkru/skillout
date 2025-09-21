@@ -88,6 +88,18 @@ export async function POST(request: NextRequest) {
 			if (needsUpdate) {
 				updatedUser.updatedAt = new Date().toISOString()
 				await db.setUser(user.id, updatedUser)
+
+				// Update profile if user has one (for creators and production)
+				if (updatedUser.role === UserRole.Creator || updatedUser.role === UserRole.Production) {
+					const profile = await db.getProfile(user.id)
+					if (profile) {
+						profile.isPro = updatedUser.role === UserRole.Production
+						profile.updatedAt = new Date().toISOString()
+						await db.setProfile(user.id, profile)
+						console.log('✅ Profile updated for migrated user:', user.email, 'isPro:', profile.isPro)
+					}
+				}
+
 				migratedCount++
 				console.log('✅ Migrated user:', user.email, 'from', user.role, 'to', updatedUser.role)
 			}

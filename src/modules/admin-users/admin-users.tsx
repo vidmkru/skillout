@@ -214,7 +214,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 			case UserRole.Admin:
 				return { label: 'Администратор', color: '#ff4757', bgColor: '#ffe0e0' }
 			case UserRole.Production:
-				return { label: 'Креатор Pro', color: '#2ed573', bgColor: '#e0ffe0' }
+				return { label: 'Production', color: '#2ed573', bgColor: '#e0ffe0' }
 			case UserRole.Creator:
 				return { label: 'Креатор', color: '#3742fa', bgColor: '#e0e0ff' }
 			case UserRole.Producer:
@@ -302,8 +302,8 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 					<select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as UserRole | 'all')}>
 						<option value="all">Все роли</option>
 						<option value={UserRole.Admin}>Администраторы</option>
-						<option value={UserRole.Production}>Креаторы Pro</option>
 						<option value={UserRole.Creator}>Креаторы</option>
+						<option value={UserRole.Production}>Production</option>
 						<option value={UserRole.Producer}>Продюсеры</option>
 					</select>
 				</div>
@@ -322,8 +322,12 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 					<div className={styles.statLabel}>Всего пользователей</div>
 				</div>
 				<div className={styles.statCard}>
-					<div className={styles.statNumber}>{users.filter(u => u.role === UserRole.Creator || u.role === UserRole.Production).length}</div>
+					<div className={styles.statNumber}>{users.filter(u => u.role === UserRole.Creator).length}</div>
 					<div className={styles.statLabel}>Креаторов</div>
+				</div>
+				<div className={styles.statCard}>
+					<div className={styles.statNumber}>{users.filter(u => u.role === UserRole.Production).length}</div>
+					<div className={styles.statLabel}>Production</div>
 				</div>
 				<div className={styles.statCard}>
 					<div className={styles.statNumber}>{users.filter(u => u.role === UserRole.Producer).length}</div>
