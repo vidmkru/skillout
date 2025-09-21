@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
-import { UserRole } from '@/shared/types/enums'
-import type { User, ApiResponse } from '@/shared/types/database'
+import { UserRole, SubscriptionTier } from '@/shared/types/enums'
+import type { ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 			const updatedUser = { ...user }
 
 			// Check if user has old role values
-			if (user.role === 'creator-pro' || user.role === 'CreatorPro') {
+			if ((user.role as string) === 'creator-pro' || (user.role as string) === 'CreatorPro') {
 				updatedUser.role = UserRole.Production
 				needsUpdate = true
 				migrationResults.push({
@@ -58,14 +58,14 @@ export async function POST(request: NextRequest) {
 			}
 
 			// Update subscription tier if needed
-			if (user.subscriptionTier === 'creator-pro' || user.subscriptionTier === 'CreatorPro') {
-				updatedUser.subscriptionTier = 'production'
+			if ((user.subscriptionTier as string) === 'creator-pro' || (user.subscriptionTier as string) === 'CreatorPro') {
+				updatedUser.subscriptionTier = SubscriptionTier.Production
 				needsUpdate = true
 			}
 
 			// Update invite quotas if needed
-			if (user.inviteQuota && (user.inviteQuota as any).creatorPro !== undefined) {
-				const quota = user.inviteQuota as any
+			if (user.inviteQuota && 'creatorPro' in user.inviteQuota) {
+				const quota = user.inviteQuota as Record<string, number>
 				updatedUser.inviteQuota = {
 					creator: quota.creator || 0,
 					production: quota.creatorPro || 0,
@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
 			}
 
 			// Update invites used if needed
-			if (user.invitesUsed && (user.invitesUsed as any).creatorPro !== undefined) {
-				const invitesUsed = user.invitesUsed as any
+			if (user.invitesUsed && 'creatorPro' in user.invitesUsed) {
+				const invitesUsed = user.invitesUsed as Record<string, number>
 				updatedUser.invitesUsed = {
 					creator: invitesUsed.creator || 0,
 					production: invitesUsed.creatorPro || 0,
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
 		console.log('✅ Admin Migrate Roles API: Migration completed. Migrated:', migratedCount, 'users')
 
-		return NextResponse.json<ApiResponse<{ migratedCount: number; results: any[] }>>({
+		return NextResponse.json<ApiResponse<{ migratedCount: number; results: Array<{ email: string; oldRole: string; newRole: string }> }>>({
 			success: true,
 			data: {
 				migratedCount,
