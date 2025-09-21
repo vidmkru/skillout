@@ -19,8 +19,8 @@ const UserInfo: FC<UserInfoProps> = ({ className }) => {
 		switch (role) {
 			case 'admin':
 				return 'Администратор'
-			case 'creator-pro':
-				return 'Creator Pro'
+			case 'production':
+				return 'Production'
 			case 'creator':
 				return 'Creator'
 			case 'producer':
@@ -34,7 +34,7 @@ const UserInfo: FC<UserInfoProps> = ({ className }) => {
 		switch (role) {
 			case 'admin':
 				return styles.admin
-			case 'creator-pro':
+			case 'production':
 				return styles.creatorPro
 			case 'creator':
 				return styles.creator

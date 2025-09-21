@@ -11,7 +11,7 @@ import styles from './subscriptions.module.scss'
 const tiers: { id: SubscriptionTier; title: string; price: string; features: string[] }[] = [
 	{ id: 'free', title: 'Free', price: '0 ₽', features: ['Публичные профили', 'Ограниченные фильтры'] },
 	{ id: 'producer', title: 'Producer Access', price: '2999 ₽/мес', features: ['Доступ к контактам', 'Инвайты', 'Поиск без лимитов'] },
-	{ id: 'creator-pro', title: 'Creator Pro', price: '1999 ₽/мес', features: ['Больше инвайтов', 'Бейджи в профиле', 'Приоритет в поиске'] }
+	{ id: 'production', title: 'Production', price: '1999 ₽/мес', features: ['Больше инвайтов', 'Бейджи в профиле', 'Приоритет в поиске'] }
 ]
 
 const Subscriptions: FC = () => {

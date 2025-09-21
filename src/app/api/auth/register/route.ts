@@ -107,15 +107,15 @@ export async function POST(request: NextRequest) {
 		const getInitialQuota = (userRole: UserRole) => {
 			switch (userRole) {
 				case UserRole.Admin:
-					return { creator: 1000, creatorPro: 500, producer: 2000 }
+					return { creator: 1000, production: 500, producer: 2000 }
 				case UserRole.CreatorPro:
-					return { creator: 10, creatorPro: 2, producer: 20 }
+					return { creator: 10, production: 2, producer: 20 }
 				case UserRole.Creator:
-					return { creator: 2, creatorPro: 0, producer: 5 }
+					return { creator: 2, production: 0, producer: 5 }
 				case UserRole.Producer:
-					return { creator: 0, creatorPro: 0, producer: 0 }
+					return { creator: 0, production: 0, producer: 0 }
 				default:
-					return { creator: 0, creatorPro: 0, producer: 0 }
+					return { creator: 0, production: 0, producer: 0 }
 			}
 		}
 
@@ -125,10 +125,10 @@ export async function POST(request: NextRequest) {
 			role,
 			createdAt: now,
 			updatedAt: now,
-			isVerified: true,
+			isVerified: false, // New users need admin verification
 			subscriptionTier: role === UserRole.CreatorPro ? SubscriptionTier.CreatorPro : SubscriptionTier.Free,
 			inviteQuota: getInitialQuota(role),
-			invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+			invitesUsed: { creator: 0, production: 0, producer: 0 },
 			invitesCreated: [],
 			quotaLastReset: now
 		}
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
 
 		// Create profile for creators (Creator and CreatorPro roles)
 		if (role === UserRole.Creator || role === UserRole.CreatorPro) {
-			const creatorProfile: CreatorProfile = {
+			const productionfile: CreatorProfile = {
 				id: userId,
 				userId: userId,
 				name: name || email.split('@')[0], // Use provided name or email prefix
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
 			}
 
 			try {
-				await db.setProfile(userId, creatorProfile)
+				await db.setProfile(userId, productionfile)
 				console.log(`✅ Profile created for creator ${email}`)
 			} catch (error) {
 				console.error(`❌ Failed to create profile for ${email}:`, error)

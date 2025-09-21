@@ -155,6 +155,26 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 		}
 	}
 
+	const toggleUserVerification = async (userId: string, currentStatus: boolean) => {
+		try {
+			const response = await api.put(`/api/admin/users/${userId}/verify`, {
+				isVerified: !currentStatus
+			})
+			if (response.data.success) {
+				setUsers(users.map(u =>
+					u.id === userId
+						? { ...u, isVerified: !currentStatus, updatedAt: new Date().toISOString() }
+						: u
+				))
+			} else {
+				setError('Ошибка обновления статуса пользователя')
+			}
+		} catch (error) {
+			console.error('Error updating user verification:', error)
+			setError('Ошибка обновления статуса пользователя')
+		}
+	}
+
 	// Filter users
 	const filteredUsers = users.filter(user => {
 		const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -328,6 +348,12 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 								onClick={() => window.open(`/profile/${user.id}`, '_blank')}
 							>
 								Профиль
+							</button>
+							<button
+								className={user.isVerified ? styles.unverifyButton : styles.verifyButton}
+								onClick={() => toggleUserVerification(user.id, user.isVerified)}
+							>
+								{user.isVerified ? 'Отменить подтверждение' : 'Подтвердить'}
 							</button>
 							{user.role !== UserRole.Admin && (
 								<button

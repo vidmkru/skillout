@@ -48,7 +48,7 @@ export interface CreatorProfile {
 		linkedin?: string
 	}
 	isPublic: boolean
-	isPro: boolean // true for creator-pro, false for creator
+	isPro: boolean // true for production, false for creator
 	createdAt: string
 	updatedAt: string
 }
@@ -110,13 +110,13 @@ export interface Invite {
 
 export interface InviteQuota {
 	creator: number
-	creatorPro: number
+	production: number
 	producer: number
 }
 
 export interface InviteUsage {
 	creator: number
-	creatorPro: number
+	production: number
 	producer: number
 }
 
@@ -151,17 +151,17 @@ export interface AdminSettings {
 	inviteQuotas: {
 		admin: {
 			creator: number
-			creatorPro: number
+			production: number
 			producer: number
 		}
 		creator: {
 			creator: number
-			creatorPro: number
+			production: number
 			producer: number
 		}
-		creatorPro: {
+		production: {
 			creator: number
-			creatorPro: number
+			production: number
 			producer: number
 		}
 	}
@@ -251,7 +251,7 @@ export interface InviteResponse {
 }
 
 export interface CreateInviteRequest {
-	role: 'creator' | 'creatorPro' | 'producer'
+	role: 'creator' | 'production' | 'producer'
 	quantity?: number // default 1
 }
 
@@ -262,7 +262,7 @@ export interface InviteStats {
 	expired: number
 	byRole: {
 		creator: number
-		creatorPro: number
+		production: number
 		producer: number
 	}
 }

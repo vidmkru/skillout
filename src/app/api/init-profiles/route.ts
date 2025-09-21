@@ -11,7 +11,7 @@ export async function POST() {
 		const now = new Date().toISOString()
 
 		// Create creator profiles
-		const creatorProfiles: CreatorProfile[] = [
+		const productionfiles: CreatorProfile[] = [
 			{
 				id: 'user-1',
 				userId: 'user-1',
@@ -102,7 +102,7 @@ export async function POST() {
 		]
 
 		// Save profiles to Redis
-		for (const profile of creatorProfiles) {
+		for (const profile of productionfiles) {
 			try {
 				await db.setProfile(profile.id, profile)
 				console.log(`✅ Profile ${profile.name} saved to Redis`)
@@ -116,7 +116,7 @@ export async function POST() {
 		return NextResponse.json<ApiResponse<{ profiles: number }>>({
 			success: true,
 			data: {
-				profiles: creatorProfiles.length
+				profiles: productionfiles.length
 			},
 			message: 'Creator profiles initialized successfully in Redis'
 		})

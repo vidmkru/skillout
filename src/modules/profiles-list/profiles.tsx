@@ -1,7 +1,7 @@
 "use client"
 import { FC, useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import classNames from 'classnames'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { Wrapper, Heading, Button } from '@/ui'
 import { axiosInstance } from '@/shared/api'
@@ -73,7 +73,11 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 	console.log('🔍 ProfilesList: Component rendered')
 
 	const router = useRouter()
-	const { user } = useAuth()
+	const searchParams = useSearchParams()
+	const { user, isAuthenticated } = useAuth()
+
+	// Get user type from URL params (creators, producers, or all)
+	const userType = searchParams.get('type') || 'creators'
 	const [profiles, setProfiles] = useState<CreatorProfile[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -93,6 +97,7 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 	const [showFilters, setShowFilters] = useState(false)
 	const [selectedProfile, setSelectedProfile] = useState<CreatorProfile | null>(null)
 	const [showModal, setShowModal] = useState(false)
+	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
 	// Ref to store the latest fetchProfiles function
 	const fetchProfilesRef = useRef<typeof fetchProfiles>()
@@ -227,6 +232,9 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		params.append('page', pageNum.toString())
 		params.append('limit', '12')
 
+		// Add user type filter
+		params.append('userType', userType)
+
 		if (filters.search) {
 			params.append('search', filters.search)
 		}
@@ -262,7 +270,7 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		}
 
 		return params.toString()
-	}, [filters])
+	}, [filters, userType])
 
 	const fetchProfiles = useCallback(async (pageNum: number = 1) => {
 		try {
@@ -278,6 +286,14 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 
 				// Apply filters
 				const filteredProfiles = mockProfiles.filter((profile: CreatorProfile) => {
+					// User type filter
+					if (userType === 'creators' && profile.isPro) {
+						return false
+					}
+					if (userType === 'producers' && !profile.isPro) {
+						return false
+					}
+
 					// Search filter
 					if (filters.search && !profile.name.toLowerCase().includes(filters.search.toLowerCase()) &&
 						!profile.bio.toLowerCase().includes(filters.search.toLowerCase())) {
@@ -316,6 +332,17 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 
 					return true
 				})
+
+				// Apply sorting for producers
+				if (userType === 'producers') {
+					filteredProfiles.sort((a, b) => {
+						const nameA = a.name.toLowerCase()
+						const nameB = b.name.toLowerCase()
+						return sortOrder === 'asc'
+							? nameA.localeCompare(nameB, 'ru')
+							: nameB.localeCompare(nameA, 'ru')
+					})
+				}
 
 				// Simulate pagination
 				const startIndex = (pageNum - 1) * 12
@@ -358,7 +385,7 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		} finally {
 			setLoading(false)
 		}
-	}, [filters, mockProfiles, buildQueryParams])
+	}, [filters, mockProfiles, buildQueryParams, userType, sortOrder])
 
 	// Update ref when fetchProfiles changes
 	useEffect(() => {
@@ -370,6 +397,24 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 			fetchProfilesRef.current()
 		}
 	}, [])
+
+	// Reload profiles when userType changes
+	useEffect(() => {
+		setPage(1)
+		if (fetchProfilesRef.current) {
+			fetchProfilesRef.current(1)
+		}
+	}, [userType])
+
+	// Reload profiles when sort order changes (for producers)
+	useEffect(() => {
+		if (userType === 'producers') {
+			setPage(1)
+			if (fetchProfilesRef.current) {
+				fetchProfilesRef.current(1)
+			}
+		}
+	}, [sortOrder, userType])
 
 	// Auto-apply all filters with smart debounce
 	useEffect(() => {
@@ -484,14 +529,18 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 		router.push(`/profile/${id}`)
 	}
 
-	// Check if user can see contacts (only admins can see contacts)
-	const canSeeContacts = user?.role === UserRole.Admin
+	// Check if user can see contacts (only authenticated creators and admins can see contacts)
+	const canSeeContacts = isAuthenticated && (user?.role === UserRole.Admin || user?.role === UserRole.Creator || user?.role === UserRole.Production)
 
 	if (error) {
 		return (
 			<section className={classNames(styles.root, className)}>
 				<Wrapper>
-					<Heading tagName="h2">Профили</Heading>
+					<Heading tagName="h2">
+						{userType === 'creators' ? 'Креаторы' :
+							userType === 'producers' ? 'Продакшны и продюсеры' :
+								'Профили'}
+					</Heading>
 					<div className={styles.error}>
 						<p>{error}</p>
 						<Button onClick={() => fetchProfiles()}>Попробовать снова</Button>
@@ -504,27 +553,41 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 	return (
 		<section className={classNames(styles.root, className)}>
 			<Wrapper>
-				<Heading tagName="h2">Профили специалистов</Heading>
+				<Heading tagName="h2">
+					{userType === 'creators' ? 'Креаторы' :
+						userType === 'producers' ? 'Продакшны и продюсеры' :
+							'Профили специалистов'}
+				</Heading>
 
 				{/* Search and Filters */}
 				<div className={styles.searchControls}>
 					<div className={styles.searchBar}>
 						<input
 							type="text"
-							placeholder="Поиск по имени или описанию..."
+							placeholder={userType === 'producers' ? "Поиск по названию..." : "Поиск по имени или описанию..."}
 							value={filters.search}
 							onChange={handleSearchChange}
 							className={styles.searchInput}
 						/>
-						<button
-							onClick={() => setShowFilters(!showFilters)}
-							className={styles.filterToggle}
-						>
-							{showFilters ? 'Скрыть фильтры' : 'Показать фильтры'}
-						</button>
+						{userType === 'creators' && (
+							<button
+								onClick={() => setShowFilters(!showFilters)}
+								className={styles.filterToggle}
+							>
+								{showFilters ? 'Скрыть фильтры' : 'Показать фильтры'}
+							</button>
+						)}
+						{userType === 'producers' && (
+							<button
+								onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+								className={styles.filterToggle}
+							>
+								{sortOrder === 'asc' ? 'А-Я' : 'Я-А'}
+							</button>
+						)}
 					</div>
 
-					{showFilters && (
+					{showFilters && userType === 'creators' && (
 						<div className={styles.filtersPanel}>
 							<div className={styles.filtersGrid}>
 								{/* Skills Filter */}
@@ -642,81 +705,107 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 						<div className={styles.grid}>
 							{profiles.map((profile) => (
 								<article key={profile.id} className={styles.card} onClick={() => handleProfileClick(profile)}>
-									<div className={styles.avatar}>
-										{profile.avatar ? (
-											<Image
-												src={profile.avatar}
-												alt={profile.name}
-												width={80}
-												height={80}
-												className={styles.avatarImage}
-											/>
-										) : (
-											<div className={styles.avatarPlaceholder}>
-												{profile.name.charAt(0).toUpperCase()}
+									{userType === 'producers' ? (
+										// Simplified card for producers
+										<div className={styles.content}>
+											<h3 className={styles.name}>{profile.name}</h3>
+											{/* City - extract from bio or use placeholder */}
+											<div className={styles.producerInfo}>
+												<span className={styles.city}>
+													{profile.bio.includes('Москва') ? 'Москва' :
+														profile.bio.includes('Санкт-Петербург') ? 'Санкт-Петербург' :
+															profile.bio.includes('город') ? 'Город указан' : 'Город не указан'}
+												</span>
+												{/* Website - use behance or linkedin as website */}
+												<span className={styles.website}>
+													{profile.contacts.behance ? 'Behance' :
+														profile.contacts.linkedin ? 'LinkedIn' : 'Сайт не указан'}
+												</span>
 											</div>
-										)}
-									</div>
-									<div className={styles.content}>
-										<h3 className={styles.name}>{profile.name}</h3>
-										<p className={styles.bio}>{profile.bio}</p>
-										<div className={styles.specialization}>
-											{profile.specialization.slice(0, 2).map((spec, i) => (
-												<span key={i} className={styles.tag}>{spec}</span>
-											))}
-											{profile.specialization.length > 2 && (
-												<span className={styles.more}>+{profile.specialization.length - 2}</span>
+										</div>
+									) : (
+										// Full card for creators
+										<>
+											<div className={styles.avatar}>
+												{profile.avatar ? (
+													<Image
+														src={profile.avatar}
+														alt={profile.name}
+														width={80}
+														height={80}
+														className={styles.avatarImage}
+													/>
+												) : (
+													<div className={styles.avatarPlaceholder}>
+														{profile.name.charAt(0).toUpperCase()}
+													</div>
+												)}
+											</div>
+											<div className={styles.content}>
+												<h3 className={styles.name}>{profile.name}</h3>
+												<p className={styles.bio}>{profile.bio}</p>
+												<div className={styles.specialization}>
+													{profile.specialization.slice(0, 2).map((spec, i) => (
+														<span key={i} className={styles.tag}>{spec}</span>
+													))}
+													{profile.specialization.length > 2 && (
+														<span className={styles.more}>+{profile.specialization.length - 2}</span>
+													)}
+												</div>
+												<div className={styles.rating}>
+													<span className={styles.stars}>★★★★★</span>
+													<span className={styles.ratingValue}>{profile.rating.toFixed(1)}</span>
+												</div>
+											</div>
+										</>
+									)}
+
+									{/* Contacts section - only visible to creators and admins */}
+									{userType === 'creators' && canSeeContacts && profile.contacts && (
+										<div className={styles.contacts}>
+											{profile.contacts.telegram && (
+												<div className={styles.contactItem}>
+													<span className={styles.contactLabel}>Telegram:</span>
+													<span className={styles.contactValue}>{profile.contacts.telegram}</span>
+												</div>
+											)}
+											{profile.contacts.instagram && (
+												<div className={styles.contactItem}>
+													<span className={styles.contactLabel}>Instagram:</span>
+													<span className={styles.contactValue}>{profile.contacts.instagram}</span>
+												</div>
+											)}
+											{profile.contacts.behance && (
+												<div className={styles.contactItem}>
+													<span className={styles.contactLabel}>Behance:</span>
+													<span className={styles.contactValue}>{profile.contacts.behance}</span>
+												</div>
+											)}
+											{profile.contacts.linkedin && (
+												<div className={styles.contactItem}>
+													<span className={styles.contactLabel}>LinkedIn:</span>
+													<span className={styles.contactValue}>{profile.contacts.linkedin}</span>
+												</div>
 											)}
 										</div>
-										<div className={styles.rating}>
-											<span className={styles.stars}>★★★★★</span>
-											<span className={styles.ratingValue}>{profile.rating.toFixed(1)}</span>
-										</div>
+									)}
 
-										{/* Contacts section - only visible to admins and producers */}
-										{canSeeContacts && profile.contacts && (
-											<div className={styles.contacts}>
-												{profile.contacts.telegram && (
-													<div className={styles.contactItem}>
-														<span className={styles.contactLabel}>Telegram:</span>
-														<span className={styles.contactValue}>{profile.contacts.telegram}</span>
-													</div>
-												)}
-												{profile.contacts.instagram && (
-													<div className={styles.contactItem}>
-														<span className={styles.contactLabel}>Instagram:</span>
-														<span className={styles.contactValue}>{profile.contacts.instagram}</span>
-													</div>
-												)}
-												{profile.contacts.behance && (
-													<div className={styles.contactItem}>
-														<span className={styles.contactLabel}>Behance:</span>
-														<span className={styles.contactValue}>{profile.contacts.behance}</span>
-													</div>
-												)}
-												{profile.contacts.linkedin && (
-													<div className={styles.contactItem}>
-														<span className={styles.contactLabel}>LinkedIn:</span>
-														<span className={styles.contactValue}>{profile.contacts.linkedin}</span>
-													</div>
-												)}
-											</div>
-										)}
-									</div>
-
-									{/* Paywall overlay for non-admin users */}
-									{!canSeeContacts && (
+									{/* Paywall overlay for non-creator users */}
+									{userType === 'creators' && !canSeeContacts && (
 										<div className={styles.paywallOverlay}>
 											<div className={styles.paywallContent}>
 												<div className={styles.paywallIcon}>🔒</div>
 												<div className={styles.paywallText}>
-													Контакты доступны только для администраторов
+													{!isAuthenticated
+														? "Доступ только по инвайтам. Как получить?"
+														: "Контакты доступны только для креаторов и администраторов"
+													}
 												</div>
 												<button className={styles.paywallButton} onClick={(e) => {
 													e.stopPropagation()
-													router.push('/subscriptions')
+													router.push(!isAuthenticated ? '/register' : '/subscriptions')
 												}}>
-													Подписаться
+													{!isAuthenticated ? 'Зарегистрироваться' : 'Подписаться'}
 												</button>
 											</div>
 										</div>
@@ -765,28 +854,30 @@ const ProfilesList: FC<ProfilesListProps> = ({ className }) => {
 									)}
 								</div>
 
-								<div className={styles.socialLinks}>
-									{selectedProfile.contacts.telegram && (
-										<a href={`https://t.me/${selectedProfile.contacts.telegram.replace('@', '')}`} className={styles.socialLink}>
-											📱
-										</a>
-									)}
-									{selectedProfile.contacts.instagram && (
-										<a href={`https://instagram.com/${selectedProfile.contacts.instagram.replace('@', '')}`} className={styles.socialLink}>
-											📷
-										</a>
-									)}
-									{selectedProfile.contacts.linkedin && (
-										<a href={`https://linkedin.com/in/${selectedProfile.contacts.linkedin}`} className={styles.socialLink}>
-											💼
-										</a>
-									)}
-									{selectedProfile.contacts.behance && (
-										<a href={`https://behance.net/${selectedProfile.contacts.behance}`} className={styles.socialLink}>
-											🎨
-										</a>
-									)}
-								</div>
+								{canSeeContacts && (
+									<div className={styles.socialLinks}>
+										{selectedProfile.contacts.telegram && (
+											<a href={`https://t.me/${selectedProfile.contacts.telegram.replace('@', '')}`} className={styles.socialLink}>
+												📱
+											</a>
+										)}
+										{selectedProfile.contacts.instagram && (
+											<a href={`https://instagram.com/${selectedProfile.contacts.instagram.replace('@', '')}`} className={styles.socialLink}>
+												📷
+											</a>
+										)}
+										{selectedProfile.contacts.linkedin && (
+											<a href={`https://linkedin.com/in/${selectedProfile.contacts.linkedin}`} className={styles.socialLink}>
+												💼
+											</a>
+										)}
+										{selectedProfile.contacts.behance && (
+											<a href={`https://behance.net/${selectedProfile.contacts.behance}`} className={styles.socialLink}>
+												🎨
+											</a>
+										)}
+									</div>
+								)}
 							</div>
 
 							<div className={styles.modalRight}>

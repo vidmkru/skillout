@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 		// Calculate remaining quota
 		const remainingQuota = {
 			creator: Math.max(0, updatedUser.inviteQuota.creator - updatedUser.invitesUsed.creator),
-			creatorPro: Math.max(0, updatedUser.inviteQuota.creatorPro - updatedUser.invitesUsed.creatorPro),
+			production: Math.max(0, updatedUser.inviteQuota.production - updatedUser.invitesUsed.production),
 			producer: Math.max(0, updatedUser.inviteQuota.producer - updatedUser.invitesUsed.producer)
 		}
 

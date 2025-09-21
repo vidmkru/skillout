@@ -12,7 +12,7 @@ export async function POST() {
 		const userId = 'user-1756403002448-48pgsrpmh'
 
 		// Create profile for existing user
-		const creatorProfile: CreatorProfile = {
+		const productionfile: CreatorProfile = {
 			id: userId,
 			userId: userId,
 			name: 'Babijonchik',
@@ -50,7 +50,7 @@ export async function POST() {
 
 		// Save profile to Redis
 		try {
-			await db.setProfile(userId, creatorProfile)
+			await db.setProfile(userId, productionfile)
 			console.log(`✅ Profile created for user ${userId}`)
 		} catch (error) {
 			console.error(`❌ Failed to create profile for ${userId}:`, error)
@@ -64,7 +64,7 @@ export async function POST() {
 
 		return NextResponse.json<ApiResponse<{ profile: CreatorProfile }>>({
 			success: true,
-			data: { profile: creatorProfile },
+			data: { profile: productionfile },
 			message: 'Profile created successfully for existing user'
 		})
 

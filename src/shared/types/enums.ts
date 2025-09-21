@@ -7,18 +7,18 @@ export enum ExperienceLevel {
 export enum UserRole {
 	Admin = 'admin',
 	Creator = 'creator',
-	CreatorPro = 'creator-pro',
+	Production = 'production',
 	Producer = 'producer'
 }
 
 export enum SubscriptionTier {
 	Free = 'free',
 	Producer = 'producer',
-	CreatorPro = 'creator-pro'
+	Production = 'production'
 }
 
 export enum InviteType {
 	Creator = 'creator',
-	CreatorPro = 'creator-pro',
+	Production = 'production',
 	Producer = 'producer'
 }

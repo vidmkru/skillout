@@ -20,8 +20,8 @@ export async function POST() {
 				updatedAt: now,
 				isVerified: true,
 				subscriptionTier: SubscriptionTier.Free,
-				inviteQuota: { creator: 1000, creatorPro: 500, producer: 2000 },
-				invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+				inviteQuota: { creator: 1000, production: 500, producer: 2000 },
+				invitesUsed: { creator: 0, production: 0, producer: 0 },
 				invitesCreated: [],
 				quotaLastReset: now
 			},
@@ -33,8 +33,8 @@ export async function POST() {
 				updatedAt: now,
 				isVerified: true,
 				subscriptionTier: SubscriptionTier.CreatorPro,
-				inviteQuota: { creator: 10, creatorPro: 2, producer: 20 },
-				invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+				inviteQuota: { creator: 10, production: 2, producer: 20 },
+				invitesUsed: { creator: 0, production: 0, producer: 0 },
 				invitesCreated: [],
 				quotaLastReset: now
 			},
@@ -46,8 +46,8 @@ export async function POST() {
 				updatedAt: now,
 				isVerified: true,
 				subscriptionTier: SubscriptionTier.CreatorPro,
-				inviteQuota: { creator: 10, creatorPro: 2, producer: 20 },
-				invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+				inviteQuota: { creator: 10, production: 2, producer: 20 },
+				invitesUsed: { creator: 0, production: 0, producer: 0 },
 				invitesCreated: [],
 				quotaLastReset: now
 			},
@@ -59,15 +59,15 @@ export async function POST() {
 				updatedAt: now,
 				isVerified: true,
 				subscriptionTier: SubscriptionTier.Free,
-				inviteQuota: { creator: 2, creatorPro: 0, producer: 5 },
-				invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+				inviteQuota: { creator: 2, production: 0, producer: 5 },
+				invitesUsed: { creator: 0, production: 0, producer: 0 },
 				invitesCreated: [],
 				quotaLastReset: now
 			}
 		]
 
 		// Create creator profiles
-		const creatorProfiles: CreatorProfile[] = [
+		const productionfiles: CreatorProfile[] = [
 			{
 				id: 'user-1',
 				userId: 'user-1',
@@ -168,7 +168,7 @@ export async function POST() {
 		}
 
 		// Save profiles to Redis
-		for (const profile of creatorProfiles) {
+		for (const profile of productionfiles) {
 			try {
 				await db.setProfile(profile.id, profile)
 				console.log(`✅ Profile ${profile.name} saved to Redis`)
@@ -183,7 +183,7 @@ export async function POST() {
 			success: true,
 			data: {
 				users: testUsers.length,
-				profiles: creatorProfiles.length
+				profiles: productionfiles.length
 			},
 			message: 'Data initialized successfully in Redis'
 		})

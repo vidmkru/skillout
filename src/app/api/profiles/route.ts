@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
 		const limit = parseInt(searchParams.get('limit') || '10')
 		const search = searchParams.get('search') || ''
 		const specialization = searchParams.get('specialization') || ''
+		const userType = searchParams.get('userType') || 'creators'
 
 		// Additional filter parameters
 		const skills = searchParams.get('skills')?.split(',').filter(Boolean) || []
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
 		const withPortfolio = searchParams.get('withPortfolio') === 'true'
 
 		console.log('🔍 Profiles API: Filter parameters:', {
-			search, specialization, skills, programs, experience, hackathon, city, withPortfolio
+			search, specialization, userType, skills, programs, experience, hackathon, city, withPortfolio
 		})
 
 		let profiles: CreatorProfile[] = []
@@ -47,6 +48,19 @@ export async function GET(request: NextRequest) {
 
 		// Apply filters
 		const filteredProfiles = profiles.filter((profile: CreatorProfile) => {
+			// User type filter
+			const matchesUserType = (() => {
+				if (userType === 'creators') {
+					// Show only creators (isPro = false)
+					return !profile.isPro
+				} else if (userType === 'producers') {
+					// Show only producers and production users (isPro = true)
+					return profile.isPro
+				}
+				// Show all if no specific type
+				return true
+			})()
+
 			// Search filter
 			const matchesSearch = !search ||
 				profile.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -93,12 +107,21 @@ export async function GET(request: NextRequest) {
 			// Portfolio filter
 			const matchesPortfolio = !withPortfolio || profile.portfolio.length > 0
 
-			return matchesSearch && matchesSpecialization && matchesSkills &&
+			return matchesUserType && matchesSearch && matchesSpecialization && matchesSkills &&
 				matchesPrograms && matchesExperience && matchesHackathon &&
 				matchesCity && matchesPortfolio
 		})
 
 		console.log('🔍 Profiles API: Profiles after filtering:', filteredProfiles.length)
+
+		// Apply sorting for producers
+		if (userType === 'producers') {
+			filteredProfiles.sort((a, b) => {
+				const nameA = a.name.toLowerCase()
+				const nameB = b.name.toLowerCase()
+				return nameA.localeCompare(nameB, 'ru')
+			})
+		}
 
 		// Apply pagination
 		const startIndex = (page - 1) * limit

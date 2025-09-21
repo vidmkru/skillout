@@ -28,8 +28,8 @@ export function useAuth() {
 					updatedAt: new Date().toISOString(),
 					isVerified: true,
 					subscriptionTier: email === 'producer@skillout.com' ? SubscriptionTier.Producer : SubscriptionTier.Free,
-					inviteQuota: { creator: 5, creatorPro: 3, producer: 2 },
-					invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+					inviteQuota: { creator: 5, production: 3, producer: 2 },
+					invitesUsed: { creator: 0, production: 0, producer: 0 },
 					invitesCreated: [],
 					quotaLastReset: new Date().toISOString()
 				}

@@ -3,10 +3,11 @@ import type { NextRequest } from 'next/server'
 
 // Protected routes that require authentication
 const protectedRoutes = [
-	'/profile',
+	'/profile/',  // Only protect /profile/[id], not /profiles
 	'/admin',
 	'/invite',
-	'/subscriptions'
+	'/subscriptions',
+	'/settings'
 ]
 
 // Routes that should redirect to home if already authenticated

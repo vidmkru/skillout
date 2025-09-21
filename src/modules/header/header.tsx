@@ -35,19 +35,18 @@ const Header: FC<HeaderProps> = ({ className }) => {
       <Wrapper className={styles.wrapper}>
         <Logo />
         <nav className={styles.nav} aria-label="Главная навигация">
-          {/* Show registration only if not authenticated */}
+          {/* Main navigation - visible to all users */}
+          <a className={styles.link} href="https://skillout.pro/" target="_blank" rel="noopener noreferrer">Главная</a>
+          <Link className={styles.link} href="/profiles?type=creators">Креаторы</Link>
+          <Link className={styles.link} href="/profiles?type=producers">Продакшны</Link>
+
+          {/* Registration and Invites - conditional */}
           {!isAuthenticated && (
             <Link className={styles.link} href="/register">Регистрация</Link>
           )}
 
-          {/* Navigation for authenticated users */}
           {isAuthenticated && (
-            <>
-              <a className={styles.link} href="https://skillout.pro/" target="_blank" rel="noopener noreferrer">Главная</a>
-              <Link className={styles.link} href="/profiles">Креаторы</Link>
-              <Link className={styles.link} href="/profiles">Продакшны</Link>
-              <Link className={styles.link} href="/invite">Инвайты</Link>
-            </>
+            <Link className={styles.link} href="/invite">Инвайты</Link>
           )}
 
           {/* Show admin panel for admins */}
@@ -59,6 +58,7 @@ const Header: FC<HeaderProps> = ({ className }) => {
           <div className={styles.authSection}>
             {isAuthenticated ? (
               <div className={styles.userInfo}>
+                <Link className={styles.link} href="/settings">Настройки</Link>
                 <span className={styles.userEmail}>{user?.email}</span>
                 <span className={styles.userRole}>({user?.role})</span>
                 <Button

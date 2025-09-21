@@ -5,15 +5,15 @@ import { UserRole, InviteType } from '@/shared/types/enums'
 export function getBaseQuota(role: UserRole) {
 	switch (role) {
 		case UserRole.Admin:
-			return { creator: 1000, creatorPro: 500, producer: 2000 }
+			return { creator: 1000, production: 500, producer: 2000 }
 		case UserRole.CreatorPro:
-			return { creator: 10, creatorPro: 2, producer: 20 }
+			return { creator: 10, production: 2, producer: 20 }
 		case UserRole.Creator:
-			return { creator: 2, creatorPro: 0, producer: 5 }
+			return { creator: 2, production: 0, producer: 5 }
 		case UserRole.Producer:
-			return { creator: 0, creatorPro: 0, producer: 0 }
+			return { creator: 0, production: 0, producer: 0 }
 		default:
-			return { creator: 0, creatorPro: 0, producer: 0 }
+			return { creator: 0, production: 0, producer: 0 }
 	}
 }
 
@@ -32,7 +32,7 @@ export function checkAndUpdateQuota(user: User): User {
 		return {
 			...user,
 			inviteQuota: baseQuota,
-			invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+			invitesUsed: { creator: 0, production: 0, producer: 0 },
 			quotaLastReset: now.toISOString()
 		}
 	}
@@ -90,12 +90,12 @@ export function canCreateInvite(user: User, type: InviteType): boolean {
 }
 
 // Функция для получения ключа типа инвайта
-export function getTypeKey(type: InviteType): 'creator' | 'creatorPro' | 'producer' {
+export function getTypeKey(type: InviteType): 'creator' | 'production' | 'producer' {
 	switch (type) {
 		case InviteType.Creator:
 			return 'creator'
 		case InviteType.CreatorPro:
-			return 'creatorPro'
+			return 'production'
 		case InviteType.Producer:
 			return 'producer'
 		default:

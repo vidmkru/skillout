@@ -37,15 +37,15 @@ const testUsers: User[] = [
 		updatedAt: new Date().toISOString(),
 		isVerified: true,
 		subscriptionTier: SubscriptionTier.Free,
-		inviteQuota: { creator: 1000, creatorPro: 500, producer: 2000 },
-		invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+		inviteQuota: { creator: 1000, production: 500, producer: 2000 },
+		invitesUsed: { creator: 0, production: 0, producer: 0 },
 		invitesCreated: [],
 		quotaLastReset: new Date().toISOString()
 	}
 ]
 
 // No profiles in fallback - all profiles will be loaded from Redis
-const creatorProfiles: CreatorProfile[] = []
+const productionfiles: CreatorProfile[] = []
 
 // Initialize fallback data only once
 let isInitialized = false
@@ -72,8 +72,8 @@ export function initializeFallbackData() {
 		updatedAt: new Date().toISOString(),
 		isVerified: true,
 		subscriptionTier: SubscriptionTier.Free,
-		inviteQuota: { creator: 1000, creatorPro: 500, producer: 2000 },
-		invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+		inviteQuota: { creator: 1000, production: 500, producer: 2000 },
+		invitesUsed: { creator: 0, production: 0, producer: 0 },
 		invitesCreated: []
 	}
 	fallbackUsers.set(actualAdminUser.id, actualAdminUser)
@@ -96,7 +96,7 @@ export function initializeFallbackData() {
 // Reset admin user's invite usage for testing
 const adminUser = fallbackUsers.get('admin-test-123')
 if (adminUser) {
-	adminUser.invitesUsed = { creator: 0, creatorPro: 0, producer: 0 }
+	adminUser.invitesUsed = { creator: 0, production: 0, producer: 0 }
 	adminUser.invitesCreated = []
 	fallbackUsers.set('admin-test-123', adminUser)
 }
@@ -111,7 +111,7 @@ const testAdminSession = {
 fallbackSessions.set(testAdminSession.id, testAdminSession)
 
 // Add creator profiles to fallback storage
-creatorProfiles.forEach((profile: CreatorProfile) => {
+productionfiles.forEach((profile: CreatorProfile) => {
 	fallbackProfiles.set(profile.id, profile)
 })
 
@@ -121,17 +121,17 @@ export const fallbackAdminSettings: AdminSettings = {
 	inviteQuotas: {
 		admin: {
 			creator: 100,
-			creatorPro: 50,
+			production: 50,
 			producer: 200
 		},
 		creator: {
 			creator: 5,
-			creatorPro: 0,
+			production: 0,
 			producer: 10
 		},
-		creatorPro: {
+		production: {
 			creator: 10,
-			creatorPro: 2,
+			production: 2,
 			producer: 20
 		}
 	},

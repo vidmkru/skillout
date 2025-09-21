@@ -52,7 +52,7 @@ export async function PUT(request: NextRequest) {
 			}, { status: 401 })
 		}
 
-		if (!tier || !['free', 'producer', 'creator-pro'].includes(tier)) {
+		if (!tier || !['free', 'producer', 'production'].includes(tier)) {
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
 				error: 'Invalid subscription tier'

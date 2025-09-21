@@ -1,0 +1,149 @@
+@use '@/shared/styles/func' as func;
+@use '@/shared/styles/variables' as var;
+
+.root {
+	padding: func.rem(40) 0;
+	min-height: 100vh;
+	background: var(--color-background);
+	display: flex;
+	align-items: center;
+}
+
+.content {
+	max-width: func.rem(600);
+	margin: 0 auto;
+	text-align: center;
+	padding: func.rem(40);
+	background: var(--color-background-secondary);
+	border-radius: func.rem(16);
+	border: 1px solid var(--color-border);
+}
+
+.icon {
+	font-size: func.rem(64);
+	margin-bottom: func.rem(24);
+	animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+	0% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+.title {
+	margin-bottom: func.rem(24);
+	color: var(--color-text-primary);
+}
+
+.message {
+	margin-bottom: func.rem(32);
+	color: var(--color-text-secondary);
+	line-height: 1.6;
+
+	p {
+		margin-bottom: func.rem(16);
+
+		&:last-child {
+			margin-bottom: 0;
+		}
+	}
+}
+
+.userInfo {
+	background: var(--color-background);
+	border: 1px solid var(--color-border);
+	border-radius: func.rem(12);
+	padding: func.rem(24);
+	margin-bottom: func.rem(32);
+}
+
+.infoItem {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: func.rem(12);
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+}
+
+.label {
+	font-weight: 500;
+	color: var(--color-text-secondary);
+}
+
+.value {
+	color: var(--color-text-primary);
+	font-weight: 500;
+}
+
+.status {
+	color: #f59e0b;
+	font-weight: 500;
+	background: rgba(245, 158, 11, 0.1);
+	padding: func.rem(4) func.rem(8);
+	border-radius: func.rem(6);
+	font-size: func.rem(14);
+}
+
+.actions {
+	display: flex;
+	gap: func.rem(16);
+	justify-content: center;
+	margin-bottom: func.rem(32);
+}
+
+.refreshButton {
+	min-width: func.rem(160);
+}
+
+.logoutButton {
+	min-width: func.rem(120);
+}
+
+.help {
+	color: var(--color-text-secondary);
+	font-size: func.rem(14);
+	line-height: 1.5;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+	.root {
+		padding: func.rem(20) 0;
+	}
+
+	.content {
+		padding: func.rem(24);
+		margin: 0 func.rem(16);
+	}
+
+	.icon {
+		font-size: func.rem(48);
+	}
+
+	.actions {
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.refreshButton,
+	.logoutButton {
+		width: 100%;
+		max-width: func.rem(200);
+	}
+
+	.infoItem {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: func.rem(4);
+	}
+}
