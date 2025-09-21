@@ -79,6 +79,17 @@ export async function PUT(
 		// Save updated user
 		await db.setUser(id, user)
 
+		// Update profile if user has one (for creators and production)
+		if (role === UserRole.Creator || role === UserRole.Production) {
+			const profile = await db.getProfile(id)
+			if (profile) {
+				profile.isPro = role === UserRole.Production
+				profile.updatedAt = new Date().toISOString()
+				await db.setProfile(id, profile)
+				console.log('✅ Profile updated for user role change:', id, 'isPro:', profile.isPro)
+			}
+		}
+
 		return NextResponse.json({
 			success: true,
 			message: 'User role updated successfully',
