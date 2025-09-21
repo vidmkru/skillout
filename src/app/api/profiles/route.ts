@@ -15,6 +15,18 @@ export async function GET(request: NextRequest) {
 		const search = searchParams.get('search') || ''
 		const specialization = searchParams.get('specialization') || ''
 
+		// Additional filter parameters
+		const skills = searchParams.get('skills')?.split(',').filter(Boolean) || []
+		const programs = searchParams.get('programs')?.split(',').filter(Boolean) || []
+		const experience = searchParams.get('experience') || ''
+		const hackathon = searchParams.get('hackathon')
+		const city = searchParams.get('city') || ''
+		const withPortfolio = searchParams.get('withPortfolio') === 'true'
+
+		console.log('🔍 Profiles API: Filter parameters:', {
+			search, specialization, skills, programs, experience, hackathon, city, withPortfolio
+		})
+
 		let profiles: CreatorProfile[] = []
 
 		// Load profiles from Redis only
@@ -35,14 +47,55 @@ export async function GET(request: NextRequest) {
 
 		// Apply filters
 		const filteredProfiles = profiles.filter((profile: CreatorProfile) => {
+			// Search filter
 			const matchesSearch = !search ||
 				profile.name.toLowerCase().includes(search.toLowerCase()) ||
 				profile.bio.toLowerCase().includes(search.toLowerCase())
 
+			// Specialization filter
 			const matchesSpecialization = !specialization ||
 				profile.specialization.includes(specialization)
 
-			return matchesSearch && matchesSpecialization
+			// Skills filter
+			const matchesSkills = skills.length === 0 ||
+				skills.some(skill =>
+					profile.specialization.includes(skill) ||
+					profile.tools.includes(skill)
+				)
+
+			// Programs filter
+			const matchesPrograms = programs.length === 0 ||
+				programs.some(program => profile.tools.includes(program))
+
+			// Experience filter
+			const matchesExperience = !experience || profile.experience === experience
+
+			// Hackathon filter - check if profile has hackathon-related achievements
+			const matchesHackathon = hackathon === null || hackathon === undefined ||
+				(hackathon === 'true' && profile.achievements.some(achievement =>
+					achievement.type === 'hackathon' ||
+					achievement.title.toLowerCase().includes('hackathon') ||
+					achievement.title.toLowerCase().includes('skillout')
+				)) ||
+				(hackathon === 'false' && !profile.achievements.some(achievement =>
+					achievement.type === 'hackathon' ||
+					achievement.title.toLowerCase().includes('hackathon') ||
+					achievement.title.toLowerCase().includes('skillout')
+				))
+
+			// City filter - check if city is mentioned in bio or achievements
+			const matchesCity = !city ||
+				profile.bio.toLowerCase().includes(city.toLowerCase()) ||
+				profile.achievements.some(achievement =>
+					achievement.description.toLowerCase().includes(city.toLowerCase())
+				)
+
+			// Portfolio filter
+			const matchesPortfolio = !withPortfolio || profile.portfolio.length > 0
+
+			return matchesSearch && matchesSpecialization && matchesSkills &&
+				matchesPrograms && matchesExperience && matchesHackathon &&
+				matchesCity && matchesPortfolio
 		})
 
 		console.log('🔍 Profiles API: Profiles after filtering:', filteredProfiles.length)

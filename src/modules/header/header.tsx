@@ -1,6 +1,7 @@
 'use client'
 
 import { FC, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Wrapper } from '@/ui'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { Button } from '@/ui/button'
@@ -34,31 +35,24 @@ const Header: FC<HeaderProps> = ({ className }) => {
       <Wrapper className={styles.wrapper}>
         <Logo />
         <nav className={styles.nav} aria-label="Главная навигация">
-          <a className={styles.link} href="/">Главная</a>
-
           {/* Show registration only if not authenticated */}
           {!isAuthenticated && (
-            <a className={styles.link} href="/register">Регистрация</a>
+            <Link className={styles.link} href="/register">Регистрация</Link>
           )}
 
-          {/* Show profiles for all authenticated users */}
+          {/* Navigation for authenticated users */}
           {isAuthenticated && (
-            <a className={styles.link} href="/profiles">Профили</a>
-          )}
-
-          {/* Show invite page for creators and admins */}
-          {isAuthenticated && (user?.role === 'creator' || user?.role === 'creator-pro' || user?.role === 'admin') && (
-            <a className={styles.link} href="/invite">Инвайты</a>
-          )}
-
-          {/* Show subscriptions for producers */}
-          {isAuthenticated && user?.role === 'producer' && (
-            <a className={styles.link} href="/subscriptions">Подписки</a>
+            <>
+              <a className={styles.link} href="https://skillout.pro/" target="_blank" rel="noopener noreferrer">Главная</a>
+              <Link className={styles.link} href="/profiles">Креаторы</Link>
+              <Link className={styles.link} href="/profiles">Продакшны</Link>
+              <Link className={styles.link} href="/invite">Инвайты</Link>
+            </>
           )}
 
           {/* Show admin panel for admins */}
           {isAuthenticated && user?.role === 'admin' && (
-            <a className={styles.link} href="/admin">Админ панель</a>
+            <Link className={styles.link} href="/admin">Админ панель</Link>
           )}
 
           {/* Authentication section */}
@@ -76,7 +70,7 @@ const Header: FC<HeaderProps> = ({ className }) => {
                 </Button>
               </div>
             ) : (
-              <a className={styles.link} href="/login">Войти</a>
+              <Link className={styles.link} href="/login">Войти</Link>
             )}
           </div>
 
