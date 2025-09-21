@@ -160,7 +160,10 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ className }) => {
 			}
 		} catch (err) {
 			console.error('Error fetching profile:', err)
-			setError('Ошибка загрузки профиля')
+			const errorMessage = err && typeof err === 'object' && 'response' in err
+				? (err.response as { data?: { message?: string } })?.data?.message || 'Ошибка загрузки профиля'
+				: 'Ошибка загрузки профиля'
+			setError(errorMessage)
 		} finally {
 			setLoading(false)
 		}
