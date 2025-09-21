@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { ExperienceLevel, UserRole } from '@/shared/types/enums'
-import type { CreatorProfile, ApiResponse } from '@/shared/types/database'
+import type { ProductionProfile, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Check if user is a creator
-		if (user.role !== UserRole.Creator && user.role !== UserRole.CreatorPro) {
+		if (user.role !== UserRole.Creator && user.role !== UserRole.Production) {
 			return NextResponse.json<ApiResponse<null>>({
 				success: false,
 				error: 'User is not a creator'
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 		const now = new Date().toISOString()
 
 		// Create profile
-		const profile: CreatorProfile = {
+		const profile: ProductionProfile = {
 			id: userId,
 			userId: userId,
 			name: user.email.split('@')[0], // Use email prefix as name
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 				linkedin: ''
 			},
 			isPublic: true,
-			isPro: user.role === UserRole.CreatorPro,
+			isPro: user.role === UserRole.Production,
 			createdAt: now,
 			updatedAt: now
 		}
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 		await db.setProfile(userId, profile)
 		console.log(`✅ Profile created for user ${user.email}`)
 
-		return NextResponse.json<ApiResponse<{ profile: CreatorProfile }>>({
+		return NextResponse.json<ApiResponse<{ profile: ProductionProfile }>>({
 			success: true,
 			data: { profile },
 			message: 'Profile created successfully'

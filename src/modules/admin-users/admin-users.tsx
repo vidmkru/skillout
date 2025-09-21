@@ -155,6 +155,26 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 		}
 	}
 
+	const toggleUserVerification = async (userId: string, currentStatus: boolean) => {
+		try {
+			const response = await api.put(`/api/admin/users/${userId}/verify`, {
+				isVerified: !currentStatus
+			})
+			if (response.data.success) {
+				setUsers(users.map(u =>
+					u.id === userId
+						? { ...u, isVerified: !currentStatus, updatedAt: new Date().toISOString() }
+						: u
+				))
+			} else {
+				setError('Ошибка обновления статуса пользователя')
+			}
+		} catch (error) {
+			console.error('Error updating user verification:', error)
+			setError('Ошибка обновления статуса пользователя')
+		}
+	}
+
 	// Filter users
 	const filteredUsers = users.filter(user => {
 		const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -167,7 +187,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 		switch (role) {
 			case UserRole.Admin:
 				return { label: 'Администратор', color: '#ff4757', bgColor: '#ffe0e0' }
-			case UserRole.CreatorPro:
+			case UserRole.Production:
 				return { label: 'Креатор Pro', color: '#2ed573', bgColor: '#e0ffe0' }
 			case UserRole.Creator:
 				return { label: 'Креатор', color: '#3742fa', bgColor: '#e0e0ff' }
@@ -255,7 +275,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 					<select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as UserRole | 'all')}>
 						<option value="all">Все роли</option>
 						<option value={UserRole.Admin}>Администраторы</option>
-						<option value={UserRole.CreatorPro}>Креаторы Pro</option>
+						<option value={UserRole.Production}>Креаторы Pro</option>
 						<option value={UserRole.Creator}>Креаторы</option>
 						<option value={UserRole.Producer}>Продюсеры</option>
 					</select>
@@ -268,7 +288,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 					<div className={styles.statLabel}>Всего пользователей</div>
 				</div>
 				<div className={styles.statCard}>
-					<div className={styles.statNumber}>{users.filter(u => u.role === UserRole.Creator || u.role === UserRole.CreatorPro).length}</div>
+					<div className={styles.statNumber}>{users.filter(u => u.role === UserRole.Creator || u.role === UserRole.Production).length}</div>
 					<div className={styles.statLabel}>Креаторов</div>
 				</div>
 				<div className={styles.statCard}>
@@ -329,6 +349,12 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 							>
 								Профиль
 							</button>
+							<button
+								className={user.isVerified ? styles.unverifyButton : styles.verifyButton}
+								onClick={() => toggleUserVerification(user.id, user.isVerified)}
+							>
+								{user.isVerified ? 'Отменить подтверждение' : 'Подтвердить'}
+							</button>
 							{user.role !== UserRole.Admin && (
 								<button
 									className={styles.deleteButton}
@@ -368,12 +394,12 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 									onChange={(e) => setCreateForm(prev => ({ ...prev, role: e.target.value as UserRole }))}
 								>
 									<option value={UserRole.Creator}>Креатор</option>
-									<option value={UserRole.CreatorPro}>Креатор Pro</option>
+									<option value={UserRole.Production}>Креатор Pro</option>
 									<option value={UserRole.Producer}>Продюсер</option>
 									<option value={UserRole.Admin}>Администратор</option>
 								</select>
 							</div>
-							{(createForm.role === UserRole.Creator || createForm.role === UserRole.CreatorPro) && (
+							{(createForm.role === UserRole.Creator || createForm.role === UserRole.Production) && (
 								<>
 									<div className={styles.formGroup}>
 										<label>Имя</label>
@@ -508,7 +534,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 									onChange={(e) => setEditingUser(prev => prev ? { ...prev, role: e.target.value as UserRole } : null)}
 								>
 									<option value={UserRole.Creator}>Креатор</option>
-									<option value={UserRole.CreatorPro}>Креатор Pro</option>
+									<option value={UserRole.Production}>Креатор Pro</option>
 									<option value={UserRole.Producer}>Продюсер</option>
 									<option value={UserRole.Admin}>Администратор</option>
 								</select>

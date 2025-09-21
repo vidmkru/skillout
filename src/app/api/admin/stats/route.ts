@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
 		const usersByRole = {
 			admin: allUsers.filter(u => u.role === UserRole.Admin).length,
 			creator: allUsers.filter(u => u.role === UserRole.Creator).length,
-			creatorPro: allUsers.filter(u => u.role === UserRole.CreatorPro).length,
+			production: allUsers.filter(u => u.role === UserRole.Production).length,
 			producer: allUsers.filter(u => u.role === UserRole.Producer).length
 		}
 
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 		// Calculate invite usage by type
 		const invitesByType = {
 			creator: allInvites.filter(invite => invite.type === InviteType.Creator).length,
-			creatorPro: allInvites.filter(invite => invite.type === InviteType.CreatorPro).length,
+			production: allInvites.filter(invite => invite.type === InviteType.Production).length,
 			producer: allInvites.filter(invite => invite.type === InviteType.Producer).length
 		}
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { UserRole, SubscriptionTier, ExperienceLevel } from '@/shared/types/enums'
 import { getFallbackUser, getFallbackSession } from '@/shared/db/fallback'
-import type { User, CreatorProfile, ApiResponse } from '@/shared/types/database'
+import type { User, ProductionProfile, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -138,9 +138,9 @@ export async function POST(request: NextRequest) {
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 			isVerified: true,
-			subscriptionTier: role === UserRole.CreatorPro ? SubscriptionTier.CreatorPro : SubscriptionTier.Free,
-			inviteQuota: { creator: 0, creatorPro: 0, producer: 0 },
-			invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+			subscriptionTier: role === UserRole.Production ? SubscriptionTier.Production : SubscriptionTier.Free,
+			inviteQuota: { creator: 0, production: 0, producer: 0 },
+			invitesUsed: { creator: 0, production: 0, producer: 0 },
 			invitesCreated: []
 		}
 
@@ -157,9 +157,9 @@ export async function POST(request: NextRequest) {
 		}
 
 		// If it's a creator, create profile
-		if (role === UserRole.Creator || role === UserRole.CreatorPro) {
+		if (role === UserRole.Creator || role === UserRole.Production) {
 			const now = new Date().toISOString()
-			const creatorProfile: CreatorProfile = {
+			const productionfile: ProductionProfile = {
 				id: newUserId,
 				userId: newUserId,
 				name: name || email.split('@')[0],
@@ -181,13 +181,13 @@ export async function POST(request: NextRequest) {
 					linkedin: ''
 				},
 				isPublic: true,
-				isPro: role === UserRole.CreatorPro,
+				isPro: role === UserRole.Production,
 				createdAt: now,
 				updatedAt: now
 			}
 
 			try {
-				await db.setProfile(newUserId, creatorProfile)
+				await db.setProfile(newUserId, productionfile)
 				console.log(`✅ Profile created for creator ${email}`)
 			} catch (error) {
 				console.error(`❌ Failed to create profile for ${email}:`, error)

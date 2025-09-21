@@ -17,17 +17,17 @@ interface InviteData {
 	invites: Invite[]
 	quota: {
 		creator: number
-		creatorPro: number
+		production: number
 		producer: number
 	}
 	used: {
 		creator: number
-		creatorPro: number
+		production: number
 		producer: number
 	}
 	remaining: {
 		creator: number
-		creatorPro: number
+		production: number
 		producer: number
 	}
 	nextReset: string
@@ -105,7 +105,7 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 	}, [fetchInvites])
 
 	// Check if user can create invites
-	if (!user || (user.role !== UserRole.Creator && user.role !== UserRole.CreatorPro && user.role !== UserRole.Admin)) {
+	if (!user || (user.role !== UserRole.Creator && user.role !== UserRole.Production && user.role !== UserRole.Admin)) {
 		return (
 			<div className={styles.container}>
 				<div className={styles.error}>
@@ -117,12 +117,12 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 	}
 
 	// Helper function to convert InviteType to object key
-	const getTypeKey = (type: InviteType): 'creator' | 'creatorPro' | 'producer' => {
+	const getTypeKey = (type: InviteType): 'creator' | 'production' | 'producer' => {
 		switch (type) {
 			case InviteType.Creator:
 				return 'creator'
-			case InviteType.CreatorPro:
-				return 'creatorPro'
+			case InviteType.Production:
+				return 'production'
 			case InviteType.Producer:
 				return 'producer'
 			default:
@@ -242,7 +242,7 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 		switch (type) {
 			case InviteType.Creator:
 				return 'Креатор'
-			case InviteType.CreatorPro:
+			case InviteType.Production:
 				return 'Креатор Pro'
 			case InviteType.Producer:
 				return 'Продюсер'
@@ -255,7 +255,7 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 		switch (type) {
 			case InviteType.Creator:
 				return '#3742fa'
-			case InviteType.CreatorPro:
+			case InviteType.Production:
 				return '#2ed573'
 			case InviteType.Producer:
 				return '#ffa502'
@@ -342,15 +342,15 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 					<div className={styles.quotaCard}>
 						<div className={styles.quotaType}>Креаторы Pro</div>
 						<div className={styles.quotaNumbers}>
-							<span className={styles.remaining}>{inviteData.remaining.creatorPro}</span>
+							<span className={styles.remaining}>{inviteData.remaining.production}</span>
 							<span className={styles.separator}>/</span>
-							<span className={styles.total}>{inviteData.quota.creatorPro}</span>
+							<span className={styles.total}>{inviteData.quota.production}</span>
 						</div>
 						<div className={styles.quotaProgress}>
 							<div
 								className={styles.progressBar}
 								style={{
-									width: `${(inviteData.used.creatorPro / inviteData.quota.creatorPro) * 100}%`,
+									width: `${(inviteData.used.production / inviteData.quota.production) * 100}%`,
 									backgroundColor: '#2ed573'
 								}}
 							/>
@@ -393,7 +393,7 @@ export const Invites: React.FC<InvitesProps> = ({ className }) => {
 							}}
 						>
 							<option value={InviteType.Creator}>Креатор</option>
-							<option value={InviteType.CreatorPro}>Креатор Pro</option>
+							<option value={InviteType.Production}>Креатор Pro</option>
 							<option value={InviteType.Producer}>Продюсер</option>
 						</select>
 					</div>

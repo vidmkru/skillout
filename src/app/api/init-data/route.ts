@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 import { UserRole, SubscriptionTier, ExperienceLevel } from '@/shared/types/enums'
-import type { User, CreatorProfile, ApiResponse } from '@/shared/types/database'
+import type { User, ProductionProfile, ApiResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,34 +20,34 @@ export async function POST() {
 				updatedAt: now,
 				isVerified: true,
 				subscriptionTier: SubscriptionTier.Free,
-				inviteQuota: { creator: 1000, creatorPro: 500, producer: 2000 },
-				invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+				inviteQuota: { creator: 1000, production: 500, producer: 2000 },
+				invitesUsed: { creator: 0, production: 0, producer: 0 },
 				invitesCreated: [],
 				quotaLastReset: now
 			},
 			{
 				id: 'user-1',
 				email: 'alexey@example.com',
-				role: UserRole.CreatorPro,
+				role: UserRole.Production,
 				createdAt: now,
 				updatedAt: now,
 				isVerified: true,
-				subscriptionTier: SubscriptionTier.CreatorPro,
-				inviteQuota: { creator: 10, creatorPro: 2, producer: 20 },
-				invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+				subscriptionTier: SubscriptionTier.Production,
+				inviteQuota: { creator: 10, production: 2, producer: 20 },
+				invitesUsed: { creator: 0, production: 0, producer: 0 },
 				invitesCreated: [],
 				quotaLastReset: now
 			},
 			{
 				id: 'user-2',
 				email: 'maria@example.com',
-				role: UserRole.CreatorPro,
+				role: UserRole.Production,
 				createdAt: now,
 				updatedAt: now,
 				isVerified: true,
-				subscriptionTier: SubscriptionTier.CreatorPro,
-				inviteQuota: { creator: 10, creatorPro: 2, producer: 20 },
-				invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+				subscriptionTier: SubscriptionTier.Production,
+				inviteQuota: { creator: 10, production: 2, producer: 20 },
+				invitesUsed: { creator: 0, production: 0, producer: 0 },
 				invitesCreated: [],
 				quotaLastReset: now
 			},
@@ -59,15 +59,15 @@ export async function POST() {
 				updatedAt: now,
 				isVerified: true,
 				subscriptionTier: SubscriptionTier.Free,
-				inviteQuota: { creator: 2, creatorPro: 0, producer: 5 },
-				invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+				inviteQuota: { creator: 2, production: 0, producer: 5 },
+				invitesUsed: { creator: 0, production: 0, producer: 0 },
 				invitesCreated: [],
 				quotaLastReset: now
 			}
 		]
 
 		// Create creator profiles
-		const creatorProfiles: CreatorProfile[] = [
+		const productionfiles: ProductionProfile[] = [
 			{
 				id: 'user-1',
 				userId: 'user-1',
@@ -168,7 +168,7 @@ export async function POST() {
 		}
 
 		// Save profiles to Redis
-		for (const profile of creatorProfiles) {
+		for (const profile of productionfiles) {
 			try {
 				await db.setProfile(profile.id, profile)
 				console.log(`✅ Profile ${profile.name} saved to Redis`)
@@ -183,7 +183,7 @@ export async function POST() {
 			success: true,
 			data: {
 				users: testUsers.length,
-				profiles: creatorProfiles.length
+				profiles: productionfiles.length
 			},
 			message: 'Data initialized successfully in Redis'
 		})

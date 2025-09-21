@@ -19,8 +19,8 @@ export async function POST() {
 			updatedAt: now,
 			isVerified: true,
 			subscriptionTier: SubscriptionTier.Free,
-			inviteQuota: { creator: 1000, creatorPro: 500, producer: 2000 },
-			invitesUsed: { creator: 0, creatorPro: 0, producer: 0 },
+			inviteQuota: { creator: 1000, production: 500, producer: 2000 },
+			invitesUsed: { creator: 0, production: 0, producer: 0 },
 			invitesCreated: [],
 			quotaLastReset: now
 		}

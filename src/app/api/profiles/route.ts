@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/shared/db/redis'
 
-import type { CreatorProfile, ApiResponse, PaginatedResponse } from '@/shared/types/database'
+import type { ProductionProfile, ApiResponse, PaginatedResponse } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
 		const limit = parseInt(searchParams.get('limit') || '10')
 		const search = searchParams.get('search') || ''
 		const specialization = searchParams.get('specialization') || ''
+		const userType = searchParams.get('userType') || 'creators'
 
 		// Additional filter parameters
 		const skills = searchParams.get('skills')?.split(',').filter(Boolean) || []
@@ -24,10 +25,10 @@ export async function GET(request: NextRequest) {
 		const withPortfolio = searchParams.get('withPortfolio') === 'true'
 
 		console.log('🔍 Profiles API: Filter parameters:', {
-			search, specialization, skills, programs, experience, hackathon, city, withPortfolio
+			search, specialization, userType, skills, programs, experience, hackathon, city, withPortfolio
 		})
 
-		let profiles: CreatorProfile[] = []
+		let profiles: ProductionProfile[] = []
 
 		// Load profiles from Redis only
 		try {
@@ -46,7 +47,20 @@ export async function GET(request: NextRequest) {
 		console.log('🔍 Profiles API: Total profiles before filtering:', profiles.length)
 
 		// Apply filters
-		const filteredProfiles = profiles.filter((profile: CreatorProfile) => {
+		const filteredProfiles = profiles.filter((profile: ProductionProfile) => {
+			// User type filter
+			const matchesUserType = (() => {
+				if (userType === 'creators') {
+					// Show only creators (isPro = false)
+					return !profile.isPro
+				} else if (userType === 'producers') {
+					// Show only producers and production users (isPro = true)
+					return profile.isPro
+				}
+				// Show all if no specific type
+				return true
+			})()
+
 			// Search filter
 			const matchesSearch = !search ||
 				profile.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -93,12 +107,21 @@ export async function GET(request: NextRequest) {
 			// Portfolio filter
 			const matchesPortfolio = !withPortfolio || profile.portfolio.length > 0
 
-			return matchesSearch && matchesSpecialization && matchesSkills &&
+			return matchesUserType && matchesSearch && matchesSpecialization && matchesSkills &&
 				matchesPrograms && matchesExperience && matchesHackathon &&
 				matchesCity && matchesPortfolio
 		})
 
 		console.log('🔍 Profiles API: Profiles after filtering:', filteredProfiles.length)
+
+		// Apply sorting for producers
+		if (userType === 'producers') {
+			filteredProfiles.sort((a, b) => {
+				const nameA = a.name.toLowerCase()
+				const nameB = b.name.toLowerCase()
+				return nameA.localeCompare(nameB, 'ru')
+			})
+		}
 
 		// Apply pagination
 		const startIndex = (page - 1) * limit
@@ -107,7 +130,7 @@ export async function GET(request: NextRequest) {
 
 		console.log('🔍 Profiles API: Paginated profiles:', paginatedProfiles.length)
 
-		const paginatedResponse: PaginatedResponse<CreatorProfile> = {
+		const paginatedResponse: PaginatedResponse<ProductionProfile> = {
 			items: paginatedProfiles,
 			page,
 			limit,
@@ -118,7 +141,7 @@ export async function GET(request: NextRequest) {
 		console.log('✅ Profiles API: Returning response with', paginatedProfiles.length, 'profiles')
 		console.log('🔍 Profiles API: Full response data:', JSON.stringify(paginatedResponse, null, 2))
 
-		return NextResponse.json<ApiResponse<PaginatedResponse<CreatorProfile>>>({
+		return NextResponse.json<ApiResponse<PaginatedResponse<ProductionProfile>>>({
 			success: true,
 			data: paginatedResponse
 		})

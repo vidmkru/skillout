@@ -287,6 +287,26 @@
 		}
 	}
 
+	.verifyButton {
+		background: #2ed573;
+		color: white;
+
+		&:hover {
+			background: #26c263;
+			box-shadow: 0 4px 12px rgba(46, 213, 115, 0.3);
+		}
+	}
+
+	.unverifyButton {
+		background: #ffa502;
+		color: white;
+
+		&:hover {
+			background: #ff9500;
+			box-shadow: 0 4px 12px rgba(255, 165, 2, 0.3);
+		}
+	}
+
 	.deleteButton {
 		background: #ff4757;
 		color: white;

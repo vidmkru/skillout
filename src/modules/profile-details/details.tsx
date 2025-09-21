@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation'
 import { Wrapper, Heading, Button } from '@/ui'
 import { axiosInstance } from '@/shared/api'
 import { useAuth } from '@/shared/hooks/useAuth'
-import type { CreatorProfile } from '@/shared/types/database'
+import type { ProductionProfile } from '@/shared/types/database'
 import { UserRole } from '@/shared/types/enums'
 import Image from 'next/image'
 
@@ -21,9 +21,9 @@ interface ProfileDetailsProps {
 const ProfileDetails: FC<ProfileDetailsProps> = ({ className, id }) => {
 	const params = useParams()
 	const profileId = id || params.id as string
-	const { user } = useAuth()
+	const { user, isAuthenticated } = useAuth()
 
-	const [profile, setProfile] = useState<CreatorProfile | null>(null)
+	const [profile, setProfile] = useState<ProductionProfile | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
@@ -31,7 +31,7 @@ const ProfileDetails: FC<ProfileDetailsProps> = ({ className, id }) => {
 		try {
 			console.log('🔍 ProfileDetails: Fetching profile for ID:', profileId)
 			setLoading(true)
-			const response = await axiosInstance.get<{ success: boolean; data: CreatorProfile }>(
+			const response = await axiosInstance.get<{ success: boolean; data: ProductionProfile }>(
 				`/api/profiles/${profileId}`
 			)
 
@@ -58,7 +58,7 @@ const ProfileDetails: FC<ProfileDetailsProps> = ({ className, id }) => {
 		}
 	}, [profileId, fetchProfile])
 
-	const canViewContacts = user?.role === UserRole.Admin
+	const canViewContacts = isAuthenticated && (user?.role === UserRole.Admin || user?.role === UserRole.Creator || user?.role === UserRole.Production)
 
 	if (loading) {
 		return (
@@ -181,9 +181,14 @@ const ProfileDetails: FC<ProfileDetailsProps> = ({ className, id }) => {
 						</div>
 					) : (
 						<div className={styles.contactsGated}>
-							<p>Контакты доступны только для подписчиков</p>
-							<Button onClick={() => window.location.href = '/subscriptions'}>
-								Оформить доступ
+							<p>
+								{!isAuthenticated
+									? "Доступ только по инвайтам. Как получить?"
+									: "Контакты доступны только для креаторов и администраторов"
+								}
+							</p>
+							<Button onClick={() => window.location.href = !isAuthenticated ? '/register' : '/subscriptions'}>
+								{!isAuthenticated ? 'Зарегистрироваться' : 'Оформить доступ'}
 							</Button>
 						</div>
 					)}

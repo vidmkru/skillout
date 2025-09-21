@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { fallbackProfiles } from '@/shared/db/fallback'
-import type { CreatorProfile } from '@/shared/types/database'
+import type { ProductionProfile } from '@/shared/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,7 +8,7 @@ export async function GET() {
 	try {
 		console.log('🔍 Test Profiles API: Request received')
 
-		const profiles = Array.from(fallbackProfiles.values()) as CreatorProfile[]
+		const profiles = Array.from(fallbackProfiles.values()) as ProductionProfile[]
 		console.log('✅ Test Profiles API: Profiles count:', profiles.length)
 		console.log('🔍 Test Profiles API: Fallback profiles keys:', Array.from(fallbackProfiles.keys()))
 

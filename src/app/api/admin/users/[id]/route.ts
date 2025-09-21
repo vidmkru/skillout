@@ -53,15 +53,15 @@ export async function PUT(
 		const getQuotaForRole = (userRole: UserRole) => {
 			switch (userRole) {
 				case UserRole.Admin:
-					return { creator: 50, creatorPro: 20, producer: 100 }
-				case UserRole.CreatorPro:
-					return { creator: 5, creatorPro: 2, producer: 10 }
+					return { creator: 50, production: 20, producer: 100 }
+				case UserRole.Production:
+					return { creator: 5, production: 2, producer: 10 }
 				case UserRole.Creator:
-					return { creator: 2, creatorPro: 0, producer: 5 }
+					return { creator: 2, production: 0, producer: 5 }
 				case UserRole.Producer:
-					return { creator: 0, creatorPro: 0, producer: 0 }
+					return { creator: 0, production: 0, producer: 0 }
 				default:
-					return { creator: 0, creatorPro: 0, producer: 0 }
+					return { creator: 0, production: 0, producer: 0 }
 			}
 		}
 

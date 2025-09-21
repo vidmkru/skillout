@@ -61,7 +61,7 @@ const RegisterProForm: FC<RegisterProFormProps> = () => {
 			const requestData = {
 				email: formData.email,
 				password: formData.password,
-				role: UserRole.CreatorPro,
+				role: UserRole.Production,
 				// Creator-specific fields
 				name: formData.name,
 				bio: formData.bio,

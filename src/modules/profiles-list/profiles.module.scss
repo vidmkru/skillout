@@ -51,6 +51,26 @@
 	}
 }
 
+// Simplified card styles for producers
+.producerInfo {
+	display: flex;
+	flex-direction: column;
+	gap: func.rem(8);
+	margin-top: func.rem(12);
+}
+
+.city {
+	color: var(--color-text-secondary);
+	font-size: func.rem(14);
+	opacity: 0.8;
+}
+
+.website {
+	color: var(--color-accent);
+	font-size: func.rem(14);
+	font-weight: 500;
+}
+
 .avatar {
 	display: flex;
 	align-items: center;

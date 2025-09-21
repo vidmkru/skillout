@@ -63,9 +63,9 @@ export async function PUT(request: NextRequest) {
 		const settings: AdminSettings = {
 			id: 'admin-settings',
 			inviteQuotas: inviteQuotas || {
-				admin: { creator: 50, creatorPro: 20, producer: 100 },
-				creator: { creator: 2, creatorPro: 0, producer: 5 },
-				creatorPro: { creator: 5, creatorPro: 2, producer: 10 }
+				admin: { creator: 50, production: 20, producer: 100 },
+				creator: { creator: 2, production: 0, producer: 5 },
+				production: { creator: 5, production: 2, producer: 10 }
 			},
 			paywallSettings: paywallSettings || {
 				contactInfo: true,

@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis'
-import type { User, Session, CreatorProfile, Invite, Rating, Subscription, AdminSettings } from '../types/database'
+import type { User, Session, ProductionProfile, Invite, Rating, Subscription, AdminSettings } from '../types/database'
 
 // Initialize Upstash Redis with existing environment variables
 const redis = new Redis({
@@ -103,17 +103,17 @@ export const db = {
 	},
 
 	// Profile operations
-	async getProfile(id: string): Promise<CreatorProfile | null> {
+	async getProfile(id: string): Promise<ProductionProfile | null> {
 		try {
 			const data = await redis.get(`${KEY_PREFIXES.PROFILE}${id}`)
-			return data ? data as CreatorProfile : null
+			return data ? data as ProductionProfile : null
 		} catch (error) {
 			console.error('Redis getProfile error:', error)
 			return null
 		}
 	},
 
-	async setProfile(id: string, profileData: CreatorProfile): Promise<void> {
+	async setProfile(id: string, profileData: ProductionProfile): Promise<void> {
 		try {
 			await redis.set(`${KEY_PREFIXES.PROFILE}${id}`, profileData, { ex: 86400 * 30 })
 		} catch (error) {
@@ -122,13 +122,13 @@ export const db = {
 		}
 	},
 
-	async getAllProfiles(): Promise<CreatorProfile[]> {
+	async getAllProfiles(): Promise<ProductionProfile[]> {
 		try {
 			const keys = await redis.keys(`${KEY_PREFIXES.PROFILE}*`)
 			if (keys.length === 0) return []
 
 			const profiles = await redis.mget(...keys)
-			return profiles.filter((p): p is CreatorProfile => p !== null)
+			return profiles.filter((p): p is ProductionProfile => p !== null)
 		} catch (error) {
 			console.error('Redis getAllProfiles error:', error)
 			return []

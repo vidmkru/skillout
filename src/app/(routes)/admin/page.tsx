@@ -12,7 +12,7 @@ interface AdminStats {
 	usersByRole: {
 		admin: number
 		creator: number
-		creatorPro: number
+		production: number
 		producer: number
 	}
 	totalInvites: number
@@ -107,7 +107,7 @@ export default function AdminPage() {
 						</div>
 						<div className={styles.roleItem}>
 							<span>Креаторы Про:</span>
-							<span>{stats?.usersByRole.creatorPro || 0}</span>
+							<span>{stats?.usersByRole.production || 0}</span>
 						</div>
 						<div className={styles.roleItem}>
 							<span>Продюсеры:</span>

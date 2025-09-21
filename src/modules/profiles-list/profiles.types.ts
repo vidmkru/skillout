@@ -1,4 +1,4 @@
-import { CreatorProfile } from '@/shared/types/common'
+import { ProductionProfile } from '@/shared/types/common'
 
 export interface ProfilesListProps {
 	className?: string
@@ -9,5 +9,5 @@ export interface ProfilesQuery {
 }
 
 export interface ProfilesData {
-	items: CreatorProfile[]
+	items: ProductionProfile[]
 }
