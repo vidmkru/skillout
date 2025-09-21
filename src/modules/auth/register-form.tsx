@@ -189,11 +189,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 				setLoading(false)
 				return
 			}
-			if (!portfolio) {
-				setError('Загрузите портфолио')
-				setLoading(false)
-				return
-			}
 			if (!creatorContacts.telegram.trim()) {
 				setError('Telegram обязателен')
 				setLoading(false)
@@ -653,10 +648,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 								</label>
 							</div>
 
-							{/* 10. Загрузите свои работы (сделать возможность загрузить видео - реализация через Kinescope, обязательное) */}
+							{/* 10. Загрузите свои работы (сделать возможность загрузить видео - реализация через Kinescope, необязательное) */}
 							<div className={styles.formGroup}>
 								<label htmlFor="portfolio" className={styles.label}>
-									Загрузите свои работы *
+									Загрузите свои работы
 								</label>
 								<input
 									id="portfolio"
@@ -664,7 +659,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 									accept="video/*"
 									onChange={(e) => setPortfolio(e.target.files?.[0] || null)}
 									className={styles.input}
-									required
 								/>
 								<p className={styles.helpText}>
 									Загрузите видео через Kinescope
