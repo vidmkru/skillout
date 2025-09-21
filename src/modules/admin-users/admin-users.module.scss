@@ -297,15 +297,37 @@
 		}
 	}
 
-	.unverifyButton {
-		background: #ffa502;
-		color: white;
+.unverifyButton {
+	background: #ffa502;
+	color: white;
 
-		&:hover {
-			background: #ff9500;
-			box-shadow: 0 4px 12px rgba(255, 165, 2, 0.3);
-		}
+	&:hover {
+		background: #ff9500;
+		box-shadow: 0 4px 12px rgba(255, 165, 2, 0.3);
 	}
+}
+
+.migrateButton {
+	background: #9c88ff;
+	color: white;
+	border: none;
+	padding: func.rem(8) func.rem(16);
+	border-radius: func.rem(4);
+	cursor: pointer;
+	font-size: func.rem(14);
+	font-weight: 500;
+	transition: all 0.2s ease;
+
+	&:hover:not(:disabled) {
+		background: #8c7ae6;
+		box-shadow: 0 4px 12px rgba(156, 136, 255, 0.3);
+	}
+
+	&:disabled {
+		background: #ccc;
+		cursor: not-allowed;
+	}
+}
 
 	.deleteButton {
 		background: #ff4757;

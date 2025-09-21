@@ -11,16 +11,25 @@ export async function PUT(
 		const body = await request.json()
 		const { role } = body
 
-		// Get current user from headers
-		const userId = request.headers.get('x-user-id')
-		if (!userId) {
+		// Get current user from session
+		const sessionToken = request.cookies.get('session')?.value
+		if (!sessionToken) {
 			return NextResponse.json(
 				{ error: 'Unauthorized' },
 				{ status: 401 }
 			)
 		}
 
-		const adminUser = await db.getUser(userId)
+		// Get session and user
+		const session = await db.getSession(sessionToken)
+		if (!session) {
+			return NextResponse.json(
+				{ error: 'Invalid session' },
+				{ status: 401 }
+			)
+		}
+
+		const adminUser = await db.getUser(session.userId)
 		if (!adminUser || adminUser.role !== UserRole.Admin) {
 			return NextResponse.json(
 				{ error: 'Admin access required' },
