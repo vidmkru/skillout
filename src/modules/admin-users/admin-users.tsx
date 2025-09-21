@@ -186,7 +186,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 			setLoading(true)
 			const response = await api.post('/api/admin/migrate-roles')
 			if (response.data.success) {
-				alert(`Миграция завершена! Обновлено пользователей: ${response.data.data.migratedCount}`)
+				alert(`Миграция завершена! Обновлено пользователей: ${response.data.data.migratedCount}\n\nТеперь обновите страницу каталогов профилей, чтобы увидеть изменения.`)
 				fetchUsers() // Reload users
 			} else {
 				setError(response.data.message || 'Ошибка миграции ролей')
@@ -307,12 +307,15 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ className }) => {
 						<option value={UserRole.Producer}>Продюсеры</option>
 					</select>
 				</div>
+			</div>
+
+			<div className={styles.migrationSection}>
 				<button
 					onClick={migrateRoles}
 					className={styles.migrateButton}
 					disabled={loading}
 				>
-					Мигрировать роли
+					🔄 Мигрировать роли (исправить старые данные)
 				</button>
 			</div>
 

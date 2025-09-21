@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 			const updatedUser = { ...user }
 
 			// Check if user has old role values
-			if ((user.role as string) === 'creator-pro' || (user.role as string) === 'CreatorPro') {
+			if ((user.role as string) === 'creator-pro' || (user.role as string) === 'CreatorPro' || (user.role as string) === 'creator-pro') {
 				updatedUser.role = UserRole.Production
 				needsUpdate = true
 				migrationResults.push({

@@ -307,25 +307,39 @@
 	}
 }
 
+.migrationSection {
+	display: flex;
+	justify-content: center;
+	margin-bottom: func.rem(20);
+	padding: func.rem(15);
+	background-color: var(--color-bg-secondary);
+	border-radius: func.rem(8);
+	border: 2px solid #9c88ff;
+}
+
 .migrateButton {
 	background: #9c88ff;
 	color: white;
 	border: none;
-	padding: func.rem(8) func.rem(16);
-	border-radius: func.rem(4);
+	padding: func.rem(12) func.rem(24);
+	border-radius: func.rem(6);
 	cursor: pointer;
-	font-size: func.rem(14);
-	font-weight: 500;
+	font-size: func.rem(16);
+	font-weight: 600;
 	transition: all 0.2s ease;
+	box-shadow: 0 2px 8px rgba(156, 136, 255, 0.3);
 
 	&:hover:not(:disabled) {
 		background: #8c7ae6;
-		box-shadow: 0 4px 12px rgba(156, 136, 255, 0.3);
+		box-shadow: 0 4px 16px rgba(156, 136, 255, 0.4);
+		transform: translateY(-2px);
 	}
 
 	&:disabled {
 		background: #ccc;
 		cursor: not-allowed;
+		transform: none;
+		box-shadow: none;
 	}
 }
 
